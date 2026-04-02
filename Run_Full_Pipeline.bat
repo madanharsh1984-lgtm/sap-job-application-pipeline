@@ -10,8 +10,16 @@ set PYTHON="C:\Users\madan\AppData\Local\Python\bin\python.exe"
 set DIR="C:\Users\madan\OneDrive\Desktop\Linkdin Job Application"
 cd /d %DIR%
 
-echo [STEP 1] Scraping LinkedIn jobs via Bright Data...
+echo [STEP 1a] Scraping LinkedIn jobs via Bright Data...
 %PYTHON% -u brightdata_scrape.py
+echo.
+
+echo [STEP 1b] Searching for recruiter posts with emails (DDG/Bing search)...
+%PYTHON% -u brightdata_posts_scrape.py
+echo.
+
+echo [STEP 1c] Finding company HR emails for job records (known email lookup)...
+%PYTHON% -u find_company_emails.py
 echo.
 
 echo [STEP 2] Sending email applications to recruiter leads...
