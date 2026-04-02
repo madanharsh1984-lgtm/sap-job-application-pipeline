@@ -1,0 +1,53 @@
+# =============================================================================
+# .gitignore — SAP Job Application Pipeline
+# =============================================================================
+
+# ── SECRETS (NEVER commit these) ──────────────────────────────────────────────
+config.py
+apify_accounts.json
+
+# ── RUNTIME DATA (generated, not source code) ─────────────────────────────────
+linkedin_posts_today.json
+email_sent_log.json
+applied_jobs_log.json
+naukri_applied_log.json
+apify_summary.json
+jobspy_summary.json
+naukri_summary.json
+easy_apply_summary.json
+daily_pipeline_summary.json
+
+# ── LOGS & DEBUG ──────────────────────────────────────────────────────────────
+*.log
+*.txt
+naukri_run_log.txt
+
+# ── SCREENSHOTS / DEBUG IMAGES ────────────────────────────────────────────────
+*.png
+*.jpg
+*.jpeg
+
+# ── RESUME DOCS (personal files, share separately) ────────────────────────────
+*.docx
+*.pdf
+
+# ── PYTHON CACHE ──────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# ── VIRTUAL ENVIRONMENTS ──────────────────────────────────────────────────────
+venv/
+env/
+.venv/
+.env/
+
+# ── TEMP / OS FILES ───────────────────────────────────────────────────────────
+Thumbs.db
+.DS_Store
+desktop.ini
+test.py
+test.txt
