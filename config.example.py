@@ -52,6 +52,11 @@ LINKEDIN_PASS  = "YourLinkedInPassword"  # ← FILL THIS
 NAUKRI_EMAIL = "your.email@gmail.com"    # ← FILL THIS
 NAUKRI_PASS  = "YourNaukriPassword"      # ← FILL THIS
 
+# ── BRIGHT DATA ───────────────────────────────────────────────────────────────
+# Get from: https://brightdata.com → Account Settings → API Keys
+# Trial accounts get $5 free; paid plans from $0.001/record
+BRIGHTDATA_API_KEY = ""    # ← FILL THIS (e.g. "ed991925-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+
 # ── APIFY ─────────────────────────────────────────────────────────────────────
 # Get from: https://console.apify.com/settings/integrations
 # Leave blank to use apify_accounts.json token rotation instead
