@@ -5,6 +5,7 @@
 # ── SECRETS (NEVER commit these) ──────────────────────────────────────────────
 config.py
 apify_accounts.json
+git_push.bat
 
 # ── RUNTIME DATA (generated, not source code) ─────────────────────────────────
 linkedin_posts_today.json
