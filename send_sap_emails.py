@@ -20,21 +20,26 @@ HOW TO USE:
 import json, smtplib, os, sys, socket, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from datetime import datetime
+import resume_builder
 
 sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
 sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
 
 from config import SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASS, BASE_DIR, LOG_DIR
 
-POSTS_FILE = os.path.join(BASE_DIR, "linkedin_posts_today.json")
-LOG_FILE   = os.path.join(LOG_DIR,  "email_sent_log.json")
+POSTS_FILE   = os.path.join(BASE_DIR, "linkedin_posts_today.json")
+LOG_FILE     = os.path.join(LOG_DIR,  "email_sent_log.json")
+RESUME_FILE  = os.path.join(BASE_DIR, "Harsh_Madan_SAP_PM_AgileES.docx")
+RESUME_NAME  = "Harsh_Madan_SAP_PM.docx"   # filename shown to recipient
 
 # --all flag → full batch; default → test 3 only
 TEST_MODE   = "--all" not in sys.argv
 TEST_LIMIT  = 3  # how many to send in test mode
 
-SEND_DELAY  = 5   # seconds between emails (avoid spam throttle)
+SEND_DELAY  = 2   # seconds between emails (2s is enough; 5s was too slow)
 
 # ── EMAIL TEMPLATE ─────────────────────────────────────────────────────────────
 EMAIL_SUBJECT  = "Application – SAP S/4HANA Program Manager / Data Migration Specialist"
@@ -140,9 +145,10 @@ def save_sent_log(log: list):
 # SEND FUNCTION
 # ==============================================================================
 
-def send_email(to_email: str, recruiter_name: str, company: str) -> tuple:
+def send_email(to_email: str, recruiter_name: str, company: str, post: dict) -> tuple:
     """
-    Send one email. Returns (success: bool, error_msg: str).
+    Send one email with a JD-tailored ATS resume attached.
+    Returns (success: bool, error_msg: str).
     """
     company_ref = f"your post related to {company} " if company else ""
     body = EMAIL_BODY.format(
@@ -156,15 +162,49 @@ def send_email(to_email: str, recruiter_name: str, company: str) -> tuple:
     msg["Subject"] = EMAIL_SUBJECT
     msg.attach(MIMEText(body, "plain", "utf-8"))
 
+    # ── Build JD-tailored resume ───────────────────────────────────────
+    resume_path = None
     try:
-        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=20) as server:
+        resume_path = resume_builder.generate(post)
+        print(f"    Resume  : {os.path.basename(resume_path)} (tailored)")
+    except Exception as e:
+        # Fallback to base resume if builder fails
+        print(f"    Resume  : [builder error: {e}] — using base resume")
+        resume_path = RESUME_FILE
+
+    if not resume_path or not os.path.exists(resume_path):
+        return False, f"Resume file not found: {resume_path}"
+
+    # ── Attach resume ──────────────────────────────────────────────────
+    with open(resume_path, "rb") as f:
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(f.read())
+    encoders.encode_base64(part)
+    part.add_header(
+        "Content-Disposition",
+        f'attachment; filename="{RESUME_NAME}"',
+    )
+    msg.attach(part)
+
+    # ── Send ───────────────────────────────────────────────────────────
+    try:
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
             server.login(SMTP_USER, SMTP_PASS)
             server.send_message(msg)
-        return True, ""
+        result = (True, "")
     except smtplib.SMTPRecipientsRefused as e:
-        return False, f"SMTP rejected recipient: {e}"
+        result = (False, f"SMTP rejected recipient: {e}")
     except Exception as e:
-        return False, str(e)
+        result = (False, str(e))
+
+    # ── Cleanup temp resume ────────────────────────────────────────────
+    try:
+        if resume_path and resume_path != RESUME_FILE and os.path.exists(resume_path):
+            os.remove(resume_path)
+    except Exception:
+        pass
+
+    return result
 
 
 # ==============================================================================
@@ -247,7 +287,7 @@ def main():
         print(f"    MX      : {reason}")
 
         # ── SEND ──────────────────────────────────────────────────────
-        success, err = send_email(email, recruiter_name, company)
+        success, err = send_email(email, recruiter_name, company, post)
 
         if success:
             print(f"    STATUS  : SENT OK")
