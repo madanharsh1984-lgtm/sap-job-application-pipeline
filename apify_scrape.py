@@ -1,405 +1,434 @@
 """
-STEP 1 — Apify LinkedIn Post Scraper (Auto-Rotating Accounts)
-=============================================================
-Uses harvestapi/linkedin-post-search on Apify (same actor that sent 85 emails).
+STEP 1b — Apify LinkedIn Recruiter Post Scraper
+================================================
+Uses Apify's harvestapi/linkedin-post-search actor to find LinkedIn posts
+where recruiters actively mention SAP job openings — many include direct
+email addresses in the post text.
 
-TOKEN MANAGEMENT:
-  - Reads token from apify_accounts.json (managed by apify_account_creator.py)
-  - If no active token found, auto-runs account creator to get a fresh $5 account
-  - If monthly limit hit: flags account as exhausted, picks next account, or creates new one
+This is the BEST email discovery method — previously returned 85+ recruiter
+emails with direct contact details in a single run.
 
-APIFY ACTOR: harvestapi~linkedin-post-search
-  - Searches LinkedIn posts (not jobs) — finds recruiters posting about openings
-  - Extracts emails from post text → send cold outreach emails
-  - maxPosts=50 per keyword, postedLimit=24h
+APIFY ACTOR: harvestapi/linkedin-post-search
+  - Searches LinkedIn by keyword
+  - Returns post text, author info, likes, date
+  - Recruiters often post "hiring SAP PM, email me at xyz@company.com"
+
+COST: ~$0.02–0.05 per run on Nano plan ($6/month covers ~120 runs)
+
+HOW IT FITS IN THE PIPELINE:
+  brightdata_scrape.py  → 79 job listings  (company + title + URL)
+  apify_scrape.py       → recruiter posts  (email + contact details) ← THIS FILE
+  find_company_emails.py→ fills gaps for companies still missing emails
+  send_sap_emails.py    → sends cold outreach to all email leads
 """
 
-import urllib.request
-import urllib.error
-import json
-import re
-import os
-import sys
-import time
+import json, re, os, sys, time, urllib.request, urllib.error
 from datetime import datetime
 
-sys.stdout.reconfigure(line_buffering=True)
-sys.stderr.reconfigure(line_buffering=True)
+sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
 
-from config import BASE_DIR, APIFY_TOKEN as _CFG_TOKEN, JOB_TITLES
+from config import APIFY_TOKEN, BASE_DIR, JOB_TITLES
 
-# ── PATHS ─────────────────────────────────────────────────────────────────────
-OUTPUT_DIR    = BASE_DIR
-OUTPUT_FILE   = os.path.join(OUTPUT_DIR, "linkedin_posts_today.json")
-ACCOUNTS_FILE = os.path.join(OUTPUT_DIR, "apify_accounts.json")
-LOG_FILE      = os.path.join(OUTPUT_DIR, "email_sent_log.json")
+# ── PATHS ──────────────────────────────────────────────────────────────────────
+OUTPUT_DIR   = BASE_DIR
+JOBS_FILE    = os.path.join(OUTPUT_DIR, "linkedin_posts_today.json")
+APIFY_OUT    = os.path.join(OUTPUT_DIR, "apify_recruiter_posts.json")
+SENT_LOG     = os.path.join(OUTPUT_DIR, "email_sent_log.json")
+SUMMARY_FILE = os.path.join(OUTPUT_DIR, "apify_summary.json")
 
-# Seed accounts file with config token if present and file doesn't exist yet
-if _CFG_TOKEN and not os.path.exists(ACCOUNTS_FILE):
-    import json as _json
-    with open(ACCOUNTS_FILE, "w") as _f:
-        _json.dump([{"email": "from-config", "password": "", "token": _CFG_TOKEN,
-                     "status": "active", "credits": "managed"}], _f, indent=2)
+# ── APIFY CONFIG ───────────────────────────────────────────────────────────────
+ACTOR_ID       = "harvestapi~linkedin-post-search"
+APIFY_BASE     = "https://api.apify.com/v2"
+MAX_POSTS      = 50       # posts per keyword (50 × 4 keywords = 200 posts)
+POSTED_LIMIT   = "24h"   # only posts from last 24 hours
+POLL_INTERVAL  = 10      # seconds between status polls
+MAX_POLL_WAIT  = 300     # 5 min max wait
 
-# ── SEARCH CONFIG ─────────────────────────────────────────────────────────────
-SEARCH_KEYWORDS = [t + " hiring" for t in JOB_TITLES]
-MAX_POSTS_PER_KEYWORD = 50
-POSTED_LIMIT          = "24h"   # only posts from last 24 hours
-
-# ── EMAIL FILTER ──────────────────────────────────────────────────────────────
-EMAIL_RE      = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
-SKIP_DOMAINS  = {
+# ── EMAIL EXTRACTION ───────────────────────────────────────────────────────────
+EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
+SKIP_DOMAINS = {
     "example.com", "domain.com", "email.com", "naukri.com",
     "linkedin.com", "indeed.com", "google.com", "glassdoor.com",
     "sentry.io", "github.com", "microsoft.com", "apple.com",
+    "brightdata.com", "sap.com", "w3.org", "schema.org",
+    "2x.png", "jpeg", "jpg", "png",
 }
 
-# ── APIFY API ─────────────────────────────────────────────────────────────────
-APIFY_BASE    = "https://api.apify.com/v2"
-ACTOR_ID      = "harvestapi~linkedin-post-search"
+# ── HIRING KEYWORDS (to filter relevant posts) ─────────────────────────────────
+HIRING_KEYWORDS = [
+    "hiring", "looking for", "urgent requirement", "vacancy", "opening",
+    "required", "opportunity", "job opening", "immediate", "consultant",
+    "project manager", "data migration", "reach out", "send your cv",
+    "send resume", "email me", "contact me", "apply", "dm me",
+    "direct message", "whatsapp", "share your profile",
+]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TOKEN MANAGEMENT
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
+# APIFY API HELPERS
+# ==============================================================================
 
-def load_accounts() -> list:
-    if not os.path.exists(ACCOUNTS_FILE):
-        return []
-    with open(ACCOUNTS_FILE, "r") as f:
-        return json.load(f)
+def apify_request(method: str, path: str, body=None) -> tuple:
+    """Make authenticated request to Apify API. Returns (status, json)."""
+    url  = f"{APIFY_BASE}{path}"
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req  = urllib.request.Request(url, data=data, method=method)
+    req.add_header("Authorization", f"Bearer {APIFY_TOKEN}")
+    req.add_header("Content-Type", "application/json")
 
-
-def save_accounts(accounts: list):
-    with open(ACCOUNTS_FILE, "w") as f:
-        json.dump(accounts, f, indent=2)
-
-
-def get_active_token() -> str:
-    """Return the most recent active Apify token, or '' if none."""
-    accounts = load_accounts()
-    active   = [a for a in accounts if a.get("status") == "active" and a.get("token")]
-    if not active:
-        return ""
-    return active[-1]["token"]
-
-
-def mark_token_exhausted(token: str):
-    """Mark a token as exhausted so next run uses a different account."""
-    accounts = load_accounts()
-    for a in accounts:
-        if a.get("token") == token:
-            a["status"] = "exhausted"
-            a["exhausted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-    save_accounts(accounts)
-    print(f"  [Token] Marked exhausted: {token[:25]}...")
-
-
-def ensure_active_token() -> str:
-    """
-    Get active token. If none exists or all are exhausted,
-    automatically run the account creator to get a fresh $5 account.
-    """
-    token = get_active_token()
-    if token:
-        print(f"  [Token] Using token: {token[:25]}...")
-        return token
-
-    print("\n  [Token] No active Apify token found.")
-    print("  [Token] Running account creator to get a fresh $5 account...")
-    print()
-
-    # Import and run the account creator
     try:
-        import importlib.util
-        creator_path = os.path.join(OUTPUT_DIR, "apify_account_creator.py")
-        spec = importlib.util.spec_from_file_location("creator", creator_path)
-        creator = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(creator)
-        creator.main()
-    except Exception as e:
-        print(f"  [Token] Account creator error: {e}")
-        print("  [Token] Please run apify_account_creator.py manually first.")
-        sys.exit(1)
-
-    # Try again after creator ran
-    token = get_active_token()
-    if not token:
-        print("  [Token] Still no token after account creation. Exiting.")
-        sys.exit(1)
-
-    return token
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            raw = resp.read().decode("utf-8")
+            return resp.status, json.loads(raw) if raw.strip() else {}
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", errors="ignore")
+        return e.code, {"error": raw[:300]}
+    except Exception as ex:
+        return 0, {"error": str(ex)}
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# APIFY API CALLS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def apify_request(url: str, token: str, method: str = "GET",
-                  body: dict = None) -> dict:
-    """Make an authenticated request to the Apify API."""
-    req = urllib.request.Request(url)
-    req.add_header("Authorization", f"Bearer {token}")
-    req.add_header("Content-Type",  "application/json")
-
-    data = None
-    if body:
-        data = json.dumps(body).encode("utf-8")
-
-    req.method = method
-    with urllib.request.urlopen(req, data=data, timeout=60) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def check_credits(token: str) -> float:
-    """Check remaining USD credits on the account. Returns credit amount."""
-    try:
-        url  = f"{APIFY_BASE}/users/me?token={token}"
-        data = apify_request(url, token)
-        plan = data.get("data", {}).get("plan", {})
-        credits = plan.get("monthlyUsageCreditsUsd", 0)
-        used    = plan.get("currentMonthlyUsageCreditsUsd", 0)
-        remaining = credits - used
-        print(f"  [Credits] Monthly: ${credits:.2f} | Used: ${used:.4f} | Remaining: ${remaining:.4f}")
-        return remaining
-    except Exception as e:
-        print(f"  [Credits] Could not check credits: {e}")
-        return 999.0  # assume ok
-
-
-def run_actor(token: str, keyword: str) -> str:
+def run_actor(keywords: list) -> str:
     """
-    Start a single Apify actor run for one keyword.
-    Returns the dataset ID, or "" on failure.
+    Start the Apify actor with all keywords in one run.
+    Nano plan allows 1 concurrent run — batch all keywords together.
+    Returns run_id or "".
+
+    harvestapi/linkedin-post-search input schema (confirmed from Apify docs):
+      searchQueries: list of strings (one per keyword)
+      maxPosts: int  (applies to all queries)
+      sort: "date" | "relevance"
     """
-    url  = f"{APIFY_BASE}/acts/{ACTOR_ID}/runs?token={token}"
-    body = {
-        "searchQuery":  keyword,
-        "maxPosts":     MAX_POSTS_PER_KEYWORD,
-        "postedLimit":  POSTED_LIMIT,
-        "sortBy":       "date",
-        "proxy": {
-            "useApifyProxy": True,
-            "apifyProxyGroups": ["RESIDENTIAL"]
-        }
+    input_body = {
+        "searchQueries": keywords,
+        "maxPosts":      MAX_POSTS,
+        "sort":          "date",
+        "scrapeReactions": False,
+        "scrapeComments":  False,
     }
 
-    try:
-        resp = apify_request(url, token, method="POST", body=body)
+    status, resp = apify_request(
+        "POST",
+        f"/acts/{ACTOR_ID}/runs",
+        body=input_body
+    )
+
+    if status in (200, 201):
         run_id = resp.get("data", {}).get("id", "")
-        if not run_id:
-            print(f"    [Actor] No run ID returned. Response: {str(resp)[:200]}")
-            return ""
-        print(f"    [Actor] Run started. ID: {run_id}")
+        print(f"    Actor started — run ID: {run_id}")
         return run_id
-    except urllib.error.HTTPError as e:
-        body_text = e.read().decode("utf-8", errors="ignore")
-        print(f"    [Actor] HTTP {e.code}: {body_text[:300]}")
-        if e.code == 402 or "limit" in body_text.lower() or "credit" in body_text.lower():
-            return "LIMIT_EXCEEDED"
-        return ""
-    except Exception as e:
-        print(f"    [Actor] Error: {e}")
+    else:
+        print(f"    [ERROR] Failed to start actor: {status} — {resp}")
         return ""
 
 
-def wait_for_run(token: str, run_id: str, max_wait: int = 300) -> str:
+def poll_run(run_id: str) -> str:
     """
-    Poll the run until SUCCEEDED or FAILED.
-    Returns dataset ID on success, "" on failure/timeout.
+    Poll until run finishes. Returns dataset_id or "".
+    Status: READY → RUNNING → SUCCEEDED / FAILED
     """
-    url      = f"{APIFY_BASE}/actor-runs/{run_id}?token={token}"
-    deadline = time.time() + max_wait
-    dots     = 0
+    deadline = time.time() + MAX_POLL_WAIT
+    attempt  = 0
 
     while time.time() < deadline:
-        time.sleep(10)
-        try:
-            resp   = apify_request(url, token)
-            status = resp.get("data", {}).get("status", "")
-            dots  += 1
-            print(f"    [Run] Status: {status} {'.' * dots}", end="\r")
+        time.sleep(POLL_INTERVAL)
+        attempt += 1
 
-            if status == "SUCCEEDED":
-                dataset_id = resp.get("data", {}).get("defaultDatasetId", "")
-                print(f"\n    [Run] SUCCEEDED. Dataset: {dataset_id}")
-                return dataset_id
-            elif status in ("FAILED", "ABORTED", "TIMED-OUT"):
-                print(f"\n    [Run] {status}.")
-                return ""
-        except Exception as e:
-            print(f"\n    [Run] Poll error: {e}")
+        status, resp = apify_request("GET", f"/actor-runs/{run_id}")
+        data   = resp.get("data", {})
+        state  = data.get("status", "?")
+        stats  = data.get("stats", {})
 
-    print(f"\n    [Run] Timed out after {max_wait}s.")
+        print(f"    [Poll #{attempt}] status={state} | "
+              f"items={stats.get('itemCount', 0)}")
+
+        if state == "SUCCEEDED":
+            dataset_id = data.get("defaultDatasetId", "")
+            print(f"    Run complete — dataset: {dataset_id}")
+            return dataset_id
+        elif state in ("FAILED", "ABORTED", "TIMED-OUT"):
+            print(f"    [ERROR] Run ended with status: {state}")
+            return ""
+        # else READY / RUNNING — keep polling
+
+    print(f"    [TIMEOUT] Run did not complete within {MAX_POLL_WAIT}s")
     return ""
 
 
-def fetch_dataset(token: str, dataset_id: str) -> list:
-    """Fetch all items from a dataset."""
-    url  = f"{APIFY_BASE}/datasets/{dataset_id}/items?token={token}&clean=true&limit=1000"
-    try:
-        items = apify_request(url, token)
-        if isinstance(items, list):
-            return items
-        # Sometimes wrapped in {"data": [...]}
-        if isinstance(items, dict):
-            return items.get("data", items.get("items", []))
-        return []
-    except Exception as e:
-        print(f"    [Dataset] Fetch error: {e}")
-        return []
+def fetch_dataset(dataset_id: str) -> list:
+    """Fetch all items from the Apify dataset."""
+    status, resp = apify_request(
+        "GET",
+        f"/datasets/{dataset_id}/items?clean=true&format=json&limit=1000"
+    )
+    if status == 200:
+        if isinstance(resp, list):
+            return resp
+        return resp.get("items", [])
+    print(f"    [ERROR] Fetching dataset failed: {status} — {resp}")
+    return []
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # POST PROCESSING
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 def extract_emails(text: str) -> list:
-    """Extract valid recruiter emails from post text."""
     if not text:
         return []
-    emails = EMAIL_RE.findall(text)
+    emails = EMAIL_RE.findall(str(text))
     valid  = []
     for e in emails:
         domain = e.split("@")[-1].lower()
-        if domain not in SKIP_DOMAINS and len(e) < 80:
+        if (domain not in SKIP_DOMAINS
+                and len(e) < 80
+                and "." in domain
+                and not domain.endswith(".png")
+                and not domain.endswith(".jpg")):
             valid.append(e.lower())
-    return list(dict.fromkeys(valid))  # dedupe, preserve order
+    return list(dict.fromkeys(valid))
 
 
-def process_post(item: dict, keyword: str) -> dict:
-    """Normalize an Apify harvestapi post item to our pipeline format."""
-    # harvestapi returns: text, url, postedAt, author (name, url, headline, company)
-    author   = item.get("author", {}) or {}
-    text     = str(item.get("text", "") or item.get("content", "") or "")
-    post_url = str(item.get("url", "") or item.get("postUrl", ""))
+def is_hiring_post(text: str) -> bool:
+    if not text:
+        return False
+    text_lower = text.lower()
+    return any(kw in text_lower for kw in HIRING_KEYWORDS)
 
-    recruiter_name = (author.get("name") or author.get("firstName", "") + " " +
-                      author.get("lastName", "")).strip()
-    company        = (author.get("company") or author.get("headline") or "").strip()
-    posted_at      = str(item.get("postedAt") or item.get("publishedAt") or "")
 
-    emails = extract_emails(text)
-    email  = emails[0] if emails else ""
+def process_post(record: dict) -> dict | None:
+    """Convert raw Apify record to our pipeline format.
+    
+    harvestapi/linkedin-post-search field names (confirmed 2026-04-02):
+      record["content"]              — post text (string)
+      record["author"]["name"]       — recruiter name
+      record["author"]["linkedinUrl"]— profile URL
+      record["author"]["info"]       — headline/title
+      record["linkedinUrl"]          — post URL
+      record["postedAt"]             — date posted
+    """
+    # Post text — field is "content" in this actor's schema
+    text = str(
+        record.get("content") or
+        record.get("text") or
+        record.get("postText") or ""
+    )
+
+    # Also extract email hints from contentAttributes (mailto: links)
+    content_attrs = record.get("contentAttributes") or []
+    extra_emails = []
+    if isinstance(content_attrs, list):
+        for attr in content_attrs:
+            tl = attr.get("textLink", "") or ""
+            if tl.startswith("mailto:"):
+                extra_emails.append(tl[7:].strip().lower())
+            elif "@" in tl and not tl.startswith("http"):
+                extra_emails.append(tl.strip().lower())
+
+    author   = record.get("author") or {}
+    if isinstance(author, dict):
+        name    = author.get("name") or author.get("fullName") or ""
+        profile = author.get("linkedinUrl") or author.get("profileUrl") or author.get("url") or ""
+        headline= author.get("info") or author.get("headline") or ""
+    else:
+        name, profile, headline = str(author), "", ""
+
+    company  = ""
+    if " at " in headline:
+        company = headline.split(" at ")[-1].strip()[:60]
+    elif " @ " in headline:
+        company = headline.split(" @ ")[-1].strip()[:60]
+
+    date_posted = str(
+        record.get("postedAt") or record.get("date") or
+        record.get("publishedAt") or datetime.now().strftime("%Y-%m-%d")
+    )
+    post_url = str(record.get("linkedinUrl") or record.get("url") or record.get("postUrl") or profile)
+
+    # Only process hiring-relevant posts
+    if not is_hiring_post(text):
+        return None
+
+    emails = extract_emails(text) + extra_emails
+    # deduplicate, preserve order
+    seen_e = set()
+    unique_emails = []
+    for e in emails:
+        if e not in seen_e:
+            seen_e.add(e)
+            unique_emails.append(e)
+    email  = unique_emails[0] if unique_emails else ""
 
     return {
-        "recruiter_name": recruiter_name,
-        "company":        company,
-        "email":          email,
-        "has_email":      bool(email),
-        "full_post_text": text,
-        "post_url":       post_url,
-        "posted_at":      posted_at,
-        "job_title":      keyword,
-        "location":       str(item.get("location", "")),
-        "source":         "linkedin_post_apify",
-        "search_keyword": keyword,
-        "author_url":     str(author.get("url") or author.get("profileUrl", "")),
+        "recruiter_name":  name or "Hiring Manager",
+        "company":         company,
+        "email":           email,
+        "has_email":       bool(email),
+        "full_post_text":  text[:1000],
+        "post_url":        post_url,
+        "posted_at":       date_posted,
+        "job_title":       "SAP Hiring Post",
+        "location":        "India",
+        "source":          "apify_linkedin_posts",
+        "search_keyword":  record.get("query") or record.get("searchQuery") or "",
+        "num_likes":       record.get("likesCount") or record.get("likes") or 0,
+        "recruiter_linkedin": profile,
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# MAIN PIPELINE
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
+# MAIN
+# ==============================================================================
 
 def main():
-    print("=" * 60)
-    print("  STEP 1 — Apify LinkedIn Post Scraper")
-    print(f"  Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print("=" * 60)
+    print("=" * 62)
+    print("  Apify LinkedIn Recruiter Post Scraper")
+    print(f"  Date   : {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"  Token  : {APIFY_TOKEN[:12]}****")
+    print(f"  Actor  : {ACTOR_ID}")
+    print("=" * 62)
 
-    # ── Get token (auto-creates account if needed) ────────────────────
-    token = ensure_active_token()
+    if not APIFY_TOKEN:
+        print("\n  ERROR: APIFY_TOKEN not set in config.py")
+        return []
 
-    # ── Check credits ─────────────────────────────────────────────────
-    remaining = check_credits(token)
-    if remaining <= 0.01:
-        print("\n  [!] Credits exhausted on this account.")
-        mark_token_exhausted(token)
-        token = ensure_active_token()  # get fresh account
-        remaining = check_credits(token)
+    # ── Quick token check ────────────────────────────────────────────────
+    print("\n  Verifying Apify token...")
+    status, resp = apify_request("GET", "/users/me")
+    if status == 200:
+        user = resp.get("data", {})
+        print(f"  Logged in as: {user.get('username','?')} "
+              f"(plan: {user.get('plan',{}).get('id','?')})")
+    elif status == 401:
+        print("  ERROR: Invalid Apify token. Check config.py")
+        return []
+    else:
+        print(f"  [WARN] Token check returned {status} — proceeding anyway")
 
-    # ── Run actor for each keyword ────────────────────────────────────
-    all_posts   = []
-    seen_urls   = set()
-    total_runs  = 0
+    # ── Load existing jobs (from Bright Data scraper) ────────────────────
+    existing_jobs = []
+    if os.path.exists(JOBS_FILE):
+        try:
+            with open(JOBS_FILE, encoding="utf-8") as f:
+                existing_jobs = json.load(f)
+            print(f"\n  Existing job records: {len(existing_jobs)}")
+        except Exception:
+            pass
 
-    for keyword in SEARCH_KEYWORDS:
-        print(f"\n  Keyword: {keyword}")
+    # ── Load sent log (avoid resending) ─────────────────────────────────
+    sent_emails = set()
+    if os.path.exists(SENT_LOG):
+        try:
+            with open(SENT_LOG, encoding="utf-8") as f:
+                log = json.load(f)
+            sent_emails = {e.get("email","").lower() for e in log if e.get("email")}
+        except Exception:
+            pass
 
-        run_id = run_actor(token, keyword)
+    # ── Run actor — ALL keywords in one batch ────────────────────────────
+    print(f"\n  Starting actor with {len(JOB_TITLES)} keywords...")
+    for kw in JOB_TITLES:
+        print(f"    - {kw}")
 
-        if run_id == "LIMIT_EXCEEDED":
-            print("  [!] Monthly limit hit. Rotating to new account...")
-            mark_token_exhausted(token)
-            token  = ensure_active_token()
-            run_id = run_actor(token, keyword)
+    run_id = run_actor(JOB_TITLES)
+    if not run_id:
+        print("  ERROR: Could not start actor.")
+        return []
 
-        if not run_id or run_id == "LIMIT_EXCEEDED":
-            print(f"    Skipping '{keyword}' — actor start failed.")
+    # ── Poll until complete ──────────────────────────────────────────────
+    print(f"\n  Polling run {run_id}...")
+    dataset_id = poll_run(run_id)
+    if not dataset_id:
+        print("  ERROR: Run did not succeed.")
+        return []
+
+    # ── Fetch dataset ────────────────────────────────────────────────────
+    print(f"\n  Fetching dataset {dataset_id}...")
+    raw_records = fetch_dataset(dataset_id)
+    print(f"  Raw records fetched: {len(raw_records)}")
+
+    # ── Process posts ────────────────────────────────────────────────────
+    processed  = []
+    seen_posts = set()
+
+    for rec in raw_records:
+        post = process_post(rec)
+        if not post:
+            continue
+        key = post.get("post_url") or post["full_post_text"][:80]
+        if key in seen_posts:
+            continue
+        seen_posts.add(key)
+
+        # Skip already-sent emails
+        if post["email"] and post["email"] in sent_emails:
             continue
 
-        total_runs += 1
-        dataset_id = wait_for_run(token, run_id, max_wait=300)
-        if not dataset_id:
-            print(f"    No dataset for '{keyword}'.")
+        processed.append(post)
+
+    with_email = [p for p in processed if p["has_email"]]
+
+    print(f"\n  Hiring posts found    : {len(processed)}")
+    print(f"  With recruiter email  : {len(with_email)}")
+
+    # ── Save Apify-only output ───────────────────────────────────────────
+    with open(APIFY_OUT, "w", encoding="utf-8") as f:
+        json.dump(processed, f, indent=2, ensure_ascii=False)
+
+    # ── Merge with existing jobs file ────────────────────────────────────
+    # Apify recruiter posts go FIRST — they have emails, highest priority
+    combined = processed + existing_jobs
+    # Deduplicate by email (keep first occurrence)
+    seen_emails_combined = set()
+    final = []
+    for r in combined:
+        email = (r.get("email") or "").lower()
+        if email and email in seen_emails_combined:
             continue
+        if email:
+            seen_emails_combined.add(email)
+        final.append(r)
 
-        items = fetch_dataset(token, dataset_id)
-        print(f"    Fetched {len(items)} posts.")
+    with open(JOBS_FILE, "w", encoding="utf-8") as f:
+        json.dump(final, f, indent=2, ensure_ascii=False)
 
-        for item in items:
-            post = process_post(item, keyword)
-            url  = post["post_url"]
-            if url and url not in seen_urls:
-                seen_urls.add(url)
-                all_posts.append(post)
+    try:
+        temp = r"C:\Users\madan\AppData\Local\Temp\linkedin_posts_today.json"
+        with open(temp, "w", encoding="utf-8") as f:
+            json.dump(final, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
 
-    # ── Deduplicate ───────────────────────────────────────────────────
-    unique_posts = []
-    seen         = set()
-    for p in all_posts:
-        k = p["post_url"] or p["recruiter_name"] + p["posted_at"]
-        if k not in seen:
-            seen.add(k)
-            unique_posts.append(p)
-
-    with_email = [p for p in unique_posts if p["has_email"]]
-
-    # ── Save output ───────────────────────────────────────────────────
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(unique_posts, f, indent=2, ensure_ascii=False)
-
-    # Copy to Temp for cron pipeline
-    temp_file = r"C:\Users\madan\AppData\Local\Temp\linkedin_posts_today.json"
-    with open(temp_file, "w", encoding="utf-8") as f:
-        json.dump(unique_posts, f, indent=2, ensure_ascii=False)
-
-    # ── Summary ───────────────────────────────────────────────────────
-    print("\n" + "=" * 60)
-    print(f"  Total posts scraped : {len(unique_posts)}")
-    print(f"  With email          : {len(with_email)}")
-    print(f"  Saved to            : {OUTPUT_FILE}")
-    print("=" * 60)
-
-    if with_email:
-        print("\n  Email leads:")
-        for p in with_email:
-            print(f"    {p['email']:40s} | {p['company'][:30]} | {p['recruiter_name'][:25]}")
-
-    # Save summary JSON
+    # ── Summary ──────────────────────────────────────────────────────────
     summary = {
-        "date":        datetime.now().strftime("%Y-%m-%d"),
-        "token_used":  token[:25] + "...",
-        "total_posts": len(unique_posts),
-        "with_email":  len(with_email),
-        "per_keyword": {kw: len([p for p in unique_posts if p["search_keyword"] == kw])
-                        for kw in SEARCH_KEYWORDS},
+        "date":            datetime.now().strftime("%Y-%m-%d"),
+        "run_id":          run_id,
+        "dataset_id":      dataset_id,
+        "raw_records":     len(raw_records),
+        "hiring_posts":    len(processed),
+        "with_email":      len(with_email),
+        "combined_total":  len(final),
     }
-    with open(os.path.join(OUTPUT_DIR, "apify_summary.json"), "w") as f:
+    with open(SUMMARY_FILE, "w") as f:
         json.dump(summary, f, indent=2)
 
-    return unique_posts
+    print()
+    print("=" * 62)
+    print(f"  Hiring posts found    : {len(processed)}")
+    print(f"  With recruiter email  : {len(with_email)}")
+    print(f"  Combined total        : {len(final)} records")
+    print(f"  Saved to              : {JOBS_FILE}")
+    print("=" * 62)
+
+    if with_email:
+        print("\n  Recruiter email leads:")
+        for p in with_email[:20]:
+            print(f"    {p['email']:40s} | {p['recruiter_name'][:30]}")
+    else:
+        print("\n  No emails in posts this run — find_company_emails.py will")
+        print("  fill gaps from company website lookup.")
+
+    return final
 
 
 if __name__ == "__main__":
