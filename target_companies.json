@@ -1,0 +1,302 @@
+[
+  {
+    "company": "Tata Steel",
+    "name": "Head of IT",
+    "email": "cio@tatasteel.com",
+    "speciality": "SAP S/4HANA Manufacturing"
+  },
+  {
+    "company": "Larsen & Toubro",
+    "name": "VP IT",
+    "email": "vpit@larsentoubro.com",
+    "speciality": "SAP PM & ERP transformation"
+  },
+  {
+    "company": "Mahindra & Mahindra",
+    "name": "Head of SAP",
+    "email": "sap.coe@mahindra.com",
+    "speciality": "SAP S/4HANA & MDG"
+  },
+  {
+    "company": "Bajaj Auto",
+    "name": "CIO Office",
+    "email": "it@bajajauto.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Hero MotoCorp",
+    "name": "VP IT",
+    "email": "it@heromotocorp.com",
+    "speciality": "SAP FICO & MM"
+  },
+  {
+    "company": "Havells India",
+    "name": "Head IT",
+    "email": "ithelpdesk@havells.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Godrej Industries",
+    "name": "CIO",
+    "email": "cio@godrej.com",
+    "speciality": "SAP S/4HANA & Data Migration"
+  },
+  {
+    "company": "JSW Steel",
+    "name": "Head of SAP",
+    "email": "it@jsw.in",
+    "speciality": "SAP S/4HANA Manufacturing"
+  },
+  {
+    "company": "Hindalco Industries",
+    "name": "VP IT",
+    "email": "it@hindalco.com",
+    "speciality": "SAP Programme Management"
+  },
+  {
+    "company": "Bharat Forge",
+    "name": "CIO",
+    "email": "it@bharatforge.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Hindustan Unilever",
+    "name": "VP IT & SAP",
+    "email": "it.careers@hul.net",
+    "speciality": "SAP S/4HANA & MDG"
+  },
+  {
+    "company": "ITC Limited",
+    "name": "Head of ERP",
+    "email": "itc.it@itc.in",
+    "speciality": "SAP Programme Management"
+  },
+  {
+    "company": "Dabur India",
+    "name": "CIO",
+    "email": "it@dabur.com",
+    "speciality": "SAP S/4HANA FMCG"
+  },
+  {
+    "company": "Marico",
+    "name": "VP Technology",
+    "email": "technology@marico.com",
+    "speciality": "SAP ERP"
+  },
+  {
+    "company": "Emami Group",
+    "name": "IT Head",
+    "email": "it@emami.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Sun Pharmaceutical",
+    "name": "Head of SAP",
+    "email": "it@sunpharma.com",
+    "speciality": "SAP S/4HANA & GxP Compliance"
+  },
+  {
+    "company": "Dr Reddy's Laboratories",
+    "name": "VP IT",
+    "email": "it@drreddys.com",
+    "speciality": "SAP S/4HANA Pharma"
+  },
+  {
+    "company": "Cipla",
+    "name": "CIO",
+    "email": "it@cipla.com",
+    "speciality": "SAP FICO & Data Migration"
+  },
+  {
+    "company": "Lupin Pharmaceuticals",
+    "name": "IT Head",
+    "email": "it@lupin.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Aurobindo Pharma",
+    "name": "Head of ERP",
+    "email": "it@aurobindo.com",
+    "speciality": "SAP S/4HANA & FICO"
+  },
+  {
+    "company": "Wipro Limited",
+    "name": "SAP Practice Head",
+    "email": "sap.practice@wipro.com",
+    "speciality": "SAP PM & Delivery"
+  },
+  {
+    "company": "HCL Technologies",
+    "name": "SAP Delivery Head",
+    "email": "sap.delivery@hcltech.com",
+    "speciality": "SAP S/4HANA Programme"
+  },
+  {
+    "company": "Tech Mahindra",
+    "name": "Head SAP Practice",
+    "email": "sap@techmahindra.com",
+    "speciality": "SAP PM & S/4HANA"
+  },
+  {
+    "company": "Mphasis",
+    "name": "SAP Practice Lead",
+    "email": "sap@mphasis.com",
+    "speciality": "SAP ERP"
+  },
+  {
+    "company": "Persistent Systems",
+    "name": "ERP Head",
+    "email": "erp@persistent.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Reliance Retail",
+    "name": "VP IT",
+    "email": "it@relianceretail.com",
+    "speciality": "SAP S/4HANA Retail"
+  },
+  {
+    "company": "Future Group",
+    "name": "IT Head",
+    "email": "it@futuregroup.in",
+    "speciality": "SAP ERP"
+  },
+  {
+    "company": "Aditya Birla Fashion",
+    "name": "CIO",
+    "email": "it@abfrl.in",
+    "speciality": "SAP S/4HANA Retail"
+  },
+  {
+    "company": "DMart (Avenue Supermarts)",
+    "name": "IT Head",
+    "email": "it@dmartindia.com",
+    "speciality": "SAP ERP"
+  },
+  {
+    "company": "Bajaj Finserv",
+    "name": "VP IT",
+    "email": "it@bajajfinserv.in",
+    "speciality": "SAP FICO & BFSI"
+  },
+  {
+    "company": "Muthoot Finance",
+    "name": "CIO",
+    "email": "it@muthoot.com",
+    "speciality": "SAP FICO"
+  },
+  {
+    "company": "Shriram Finance",
+    "name": "Head of IT",
+    "email": "it@shriramfinance.in",
+    "speciality": "SAP Finance"
+  },
+  {
+    "company": "Reliance Industries",
+    "name": "VP ERP",
+    "email": "erp@ril.com",
+    "speciality": "SAP S/4HANA Energy"
+  },
+  {
+    "company": "ONGC",
+    "name": "Head of SAP",
+    "email": "cio@ongc.co.in",
+    "speciality": "SAP ERP & Data Migration"
+  },
+  {
+    "company": "Vedanta Resources",
+    "name": "CIO India",
+    "email": "it@vedanta.co.in",
+    "speciality": "SAP S/4HANA Mining"
+  },
+  {
+    "company": "Blue Dart Express",
+    "name": "VP IT",
+    "email": "it@bluedart.com",
+    "speciality": "SAP S/4HANA Logistics"
+  },
+  {
+    "company": "Delhivery",
+    "name": "Head of ERP",
+    "email": "erp@delhivery.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Mahindra Logistics",
+    "name": "CIO",
+    "email": "it@mahindralogistics.com",
+    "speciality": "SAP MM & Logistics"
+  },
+  {
+    "company": "Siemens India",
+    "name": "Head of SAP",
+    "email": "sap.india@siemens.com",
+    "speciality": "SAP S/4HANA Manufacturing"
+  },
+  {
+    "company": "ABB India",
+    "name": "IT Director",
+    "email": "it.india@in.abb.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Honeywell India",
+    "name": "IT Head India",
+    "email": "it.india@honeywell.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Schneider Electric India",
+    "name": "VP IT",
+    "email": "it.india@se.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Bosch India",
+    "name": "Head of SAP",
+    "email": "sap@bosch.in",
+    "speciality": "SAP S/4HANA Manufacturing"
+  },
+  {
+    "company": "3M India",
+    "name": "IT Director",
+    "email": "it.india@mmm.com",
+    "speciality": "SAP ERP"
+  },
+  {
+    "company": "Cummins India",
+    "name": "IT Head",
+    "email": "it@cummins.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Saint-Gobain India",
+    "name": "CIO",
+    "email": "it.india@saint-gobain.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Philips India",
+    "name": "IT Director",
+    "email": "it.india@philips.com",
+    "speciality": "SAP FICO & MDG"
+  },
+  {
+    "company": "GE India",
+    "name": "VP IT",
+    "email": "it.india@ge.com",
+    "speciality": "SAP S/4HANA"
+  },
+  {
+    "company": "Caterpillar India",
+    "name": "IT Head",
+    "email": "it.india@cat.com",
+    "speciality": "SAP Manufacturing"
+  },
+  {
+    "company": "Emerson India",
+    "name": "IT Director",
+    "email": "it.india@emerson.com",
+    "speciality": "SAP S/4HANA"
+  }
+]
