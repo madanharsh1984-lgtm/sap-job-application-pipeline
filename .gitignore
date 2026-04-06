@@ -52,3 +52,17 @@ Thumbs.db
 desktop.ini
 test.py
 test.txt
+backend/.env
+backend/*.db
+backend/*.db-journal
+frontend/.env
+frontend/.git
+frontend/node_modules/
+frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
+frontend/test-results-*/
+frontend/test-results*/
+frontend/test_output.txt
+frontend/test_run.log
+frontend/bun.lockb

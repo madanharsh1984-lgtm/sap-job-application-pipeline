@@ -1,0 +1,68 @@
+services:
+  # Backend API (FastAPI)
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: sap-saas-api
+    ports:
+      - "8001:8000"
+    volumes:
+      - ../backend:/app
+    env_file:
+      - ../backend/.env
+    depends_on:
+      - db
+      - redis
+
+  # Celery Worker (Task Queue)
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: sap-saas-worker
+    volumes:
+      - ../backend:/app
+    command: celery -A celery_app.celery_app worker --loglevel=info
+    env_file:
+      - ../backend/.env
+    depends_on:
+      - db
+      - redis
+
+  # Frontend (Next.js) - Temporarily disabled due to build error and local host conflict
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: Dockerfile
+  #   container_name: sap-saas-frontend
+  #   ports:
+  #     - "3005:3000"
+  #   volumes:
+  #     - ../frontend:/app
+  #     - /app/node_modules
+  #   env_file:
+  #     - ../frontend/.env
+
+  # Database (PostgreSQL)
+  db:
+    image: postgres:15
+    container_name: sap-saas-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sap_saas
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # Redis (Message Broker)
+  redis:
+    image: redis:7-alpine
+    container_name: sap-saas-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
