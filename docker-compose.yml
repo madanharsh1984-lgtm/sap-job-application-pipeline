@@ -36,11 +36,11 @@ services:
       - redis:redis
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sap_pipeline
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in root .env}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       CORS_ORIGINS: http://localhost:3000
-      APIFY_TOKEN: ${APIFY_TOKEN}
+      APIFY_TOKEN: ${APIFY_TOKEN:?APIFY_TOKEN must be set in root .env}
       APIFY_ACTOR_ID: ${APIFY_ACTOR_ID:-harvestapi~linkedin-post-search}
       APIFY_MAX_POSTS: ${APIFY_MAX_POSTS:-50}
       APIFY_MAX_CONCURRENT_RUNS: ${APIFY_MAX_CONCURRENT_RUNS:-2}
@@ -69,11 +69,11 @@ services:
       - redis:redis
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sap_pipeline
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in root .env}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       CORS_ORIGINS: http://localhost:3000
-      APIFY_TOKEN: ${APIFY_TOKEN}
+      APIFY_TOKEN: ${APIFY_TOKEN:?APIFY_TOKEN must be set in root .env}
       APIFY_ACTOR_ID: ${APIFY_ACTOR_ID:-harvestapi~linkedin-post-search}
       APIFY_MAX_POSTS: ${APIFY_MAX_POSTS:-50}
       APIFY_MAX_CONCURRENT_RUNS: ${APIFY_MAX_CONCURRENT_RUNS:-2}
