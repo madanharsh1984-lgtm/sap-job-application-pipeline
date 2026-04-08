@@ -129,7 +129,7 @@ def _count_running_actor_runs(actor_id: str) -> int:
     if not isinstance(items, list):
         logger.warning('Unexpected Apify running-runs payload for actor_id=%s', actor_id)
         return 0
-    return len(items) if isinstance(items, list) else 0
+    return len(items)
 
 
 def _wait_for_apify_capacity(actor_id: str) -> None:
