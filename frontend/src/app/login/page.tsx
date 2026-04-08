@@ -2,17 +2,17 @@
 
 import { useState } from 'react';
 import api from '@/lib/api';
-import { setEmail, setKeywordSetId } from '@/lib/auth';
+import { setEmail as setSessionEmail, setKeywordSetId } from '@/lib/auth';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmailInput] = useState('');
   const [message, setMessage] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const response = await api.get('/api/dashboard', { params: { email } });
-      setEmail(email);
+      setSessionEmail(email);
       if (response.data?.keyword_set_id) {
         setKeywordSetId(String(response.data.keyword_set_id));
       }
@@ -34,7 +34,7 @@ export default function LoginPage() {
     <main>
       <h1>Login</h1>
       <form onSubmit={submit}>
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder='Email' required />
+        <input value={email} onChange={(e) => setEmailInput(e.target.value)} placeholder='Email' required />
         <br />
         <button type='submit'>Login</button>
       </form>

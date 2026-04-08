@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import api from '@/lib/api';
-import { setEmail, setKeywordSetId } from '@/lib/auth';
+import { setEmail as setSessionEmail, setKeywordSetId } from '@/lib/auth';
 
 export default function SignupPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmailInput] = useState('');
   const [resumeContent, setResumeContent] = useState('');
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [message, setMessage] = useState('');
@@ -28,7 +28,7 @@ export default function SignupPage() {
       if (onboardResponse.data?.keyword_set_id) {
         setKeywordSetId(String(onboardResponse.data.keyword_set_id));
       }
-      setEmail(email);
+      setSessionEmail(email);
       setMessage('Signup and onboarding successful. Redirecting to dashboard...');
       window.location.href = '/dashboard';
     } catch (error: unknown) {
@@ -47,7 +47,7 @@ export default function SignupPage() {
     <main>
       <h1>Signup</h1>
       <form onSubmit={submit}>
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder='Email' required />
+        <input value={email} onChange={(e) => setEmailInput(e.target.value)} placeholder='Email' required />
         <br />
         <textarea
           value={resumeContent}
