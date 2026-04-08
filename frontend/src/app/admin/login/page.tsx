@@ -19,8 +19,15 @@ export default function AdminLoginPage() {
 
     try {
       await login(email, password);
-      // Verify admin role
-      const me = await getMe();
+      // Verify admin role — if this fails, clean up the token
+      let me;
+      try {
+        me = await getMe();
+      } catch {
+        localStorage.removeItem("token");
+        setError("Login failed — could not verify account");
+        return;
+      }
       if (me.role !== "admin") {
         localStorage.removeItem("token");
         setError("Access denied. Admin privileges required.");

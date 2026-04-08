@@ -77,7 +77,8 @@ export async function login(email: string, password: string) {
 export function logout() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    const isAdminPath = window.location.pathname.startsWith("/admin");
+    window.location.href = isAdminPath ? "/admin/login" : "/login";
   }
 }
 
