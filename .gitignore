@@ -3,7 +3,8 @@
 # =============================================================================
 
 # ── SECRETS (NEVER commit these) ──────────────────────────────────────────────
-config.py
+# Only the root-level config.py (legacy desktop automation secrets)
+/config.py
 apify_accounts.json
 git_push.bat
 
@@ -20,7 +21,8 @@ daily_pipeline_summary.json
 
 # ── LOGS & DEBUG ──────────────────────────────────────────────────────────────
 *.log
-*.txt
+# Only ignore .txt files in the root directory (not backend/requirements.txt etc.)
+/*.txt
 naukri_run_log.txt
 
 # ── SCREENSHOTS / DEBUG IMAGES ────────────────────────────────────────────────

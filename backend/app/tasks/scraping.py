@@ -61,6 +61,13 @@ def process_resume_task(self, user_id: int, resume_text: str) -> dict:
       6. If new keyword_set → trigger Apify
       7. If existing → user gets shared results immediately
 
+    Note: Resume raw_text is truncated to 10,000 characters before storage
+    to limit database row size. Keyword extraction runs on the full text.
+
+    Returns dict with keyword_hash and is_new.
+      6. If new keyword_set → trigger Apify
+      7. If existing → user gets shared results immediately
+
     Returns dict with keyword_hash and is_new.
     """
     try:
