@@ -15,6 +15,82 @@ Step 4 → Naukri Auto-Apply (Selenium) — Remote + Delhi NCR, last 3 days
 
 ---
 
+## SaaS Platform (JobAccelerator AI)
+
+A multi-user SaaS version of the pipeline with a web UI, API, and background job processing.
+
+### Architecture
+
+| Service | Technology | Port |
+|---|---|---|
+| Frontend | Next.js 15 | `3000` |
+| Backend API | FastAPI | `8000` |
+| Database | PostgreSQL 16 | `5432` |
+| Cache / Broker | Redis 7 | `6379` |
+| Worker | Celery | — |
+
+### Quick Start (Docker)
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+
+**Step 1:** Clone the repo and `cd` into it:
+```bash
+git clone https://github.com/madanharsh1984-lgtm/sap-job-application-pipeline.git
+cd sap-job-application-pipeline
+```
+
+**Step 2:** Create a `.env` file from the template:
+```bash
+cp .env.example .env      # Linux/macOS
+copy .env.example .env    # Windows CMD
+```
+Edit `.env` and set `SECRET_KEY` to any random string.
+
+**Step 3:** Start all services:
+```bash
+docker-compose up --build
+```
+
+> **Windows CMD users:** If you prefer setting environment variables inline instead of using `.env`:
+> ```cmd
+> set SECRET_KEY=change-me-to-a-random-string
+> docker-compose up --build
+> ```
+> Do **not** use `export` — that is Linux/macOS syntax. Do **not** use `#` for comments in CMD.
+
+> **PowerShell users:**
+> ```powershell
+> $env:SECRET_KEY="change-me-to-a-random-string"
+> docker-compose up --build
+> ```
+
+**Step 4:** Access the application:
+
+| URL | Purpose |
+|---|---|
+| http://localhost:3000 | Frontend (user portal) |
+| http://localhost:3000/admin/login | Admin portal |
+| http://localhost:8000 | Backend API |
+| http://localhost:8000/docs | Swagger API docs |
+| http://localhost:8000/health | Health check |
+
+### Creating an Admin User
+
+There is no admin signup UI. Register a normal user at `/signup`, then promote via SQL:
+
+```bash
+docker-compose exec postgres psql -U postgres -d jobaccelerator -c \
+  "UPDATE users SET role = 'admin' WHERE email = 'your@email.com';"
+```
+
+---
+
+## Legacy Desktop Pipeline
+
+> The sections below describe the original single-user Windows desktop automation scripts. They are independent of the SaaS platform above.
+
+---
+
 ## Project Structure
 
 ```
