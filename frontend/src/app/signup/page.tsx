@@ -47,16 +47,17 @@ export default function SignupPage() {
     <main>
       <h1>Signup</h1>
       <form onSubmit={submit}>
-        <input value={email} onChange={(e) => setEmailInput(e.target.value)} placeholder='Email' required />
+        <input aria-label='Email' value={email} onChange={(e) => setEmailInput(e.target.value)} placeholder='Email' required />
         <br />
         <textarea
+          aria-label='Resume content'
           value={resumeContent}
           onChange={(e) => setResumeContent(e.target.value)}
           placeholder='Paste resume text'
           rows={6}
         />
         <br />
-        <input type='file' accept='.txt,.pdf,.doc,.docx' onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)} />
+        <input aria-label='Resume file' type='file' accept='.txt,.pdf,.doc,.docx' onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)} />
         <br />
         <button type='submit'>Create account</button>
       </form>

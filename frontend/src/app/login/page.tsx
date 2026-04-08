@@ -34,7 +34,7 @@ export default function LoginPage() {
     <main>
       <h1>Login</h1>
       <form onSubmit={submit}>
-        <input value={email} onChange={(e) => setEmailInput(e.target.value)} placeholder='Email' required />
+        <input aria-label='Email' value={email} onChange={(e) => setEmailInput(e.target.value)} placeholder='Email' required />
         <br />
         <button type='submit'>Login</button>
       </form>
