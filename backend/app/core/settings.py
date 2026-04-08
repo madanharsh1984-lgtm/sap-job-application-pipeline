@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     APIFY_MAX_CONCURRENT_RUNS: int = 2
     APIFY_CONCURRENCY_WAIT_SECONDS: int = 180
     APIFY_CONCURRENCY_POLL_SECONDS: float = 3.0
+    APIFY_RUN_STATUS_MAX_POLLS: int = 30
+    APIFY_RUN_STATUS_POLL_SECONDS: float = 2.0
 
 
 settings = Settings()

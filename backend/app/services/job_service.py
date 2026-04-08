@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 import time
 import urllib.error
@@ -18,6 +19,8 @@ MAX_JOBS_TO_INGEST = 200
 APIFY_BASE_URL = 'https://api.apify.com/v2'
 MIN_KEYWORD_LENGTH = 4
 MAX_KEYWORDS = 30
+
+logger = logging.getLogger(__name__)
 
 
 def extract_keywords(content: str) -> list[str]:
@@ -120,8 +123,12 @@ def _count_running_actor_runs(actor_id: str) -> int:
         f'/acts/{actor_id}/runs?status=RUNNING&desc=1&limit=100',
     )
     if status != 200:
+        logger.warning('Failed to inspect Apify running runs: actor_id=%s status=%s', actor_id, status)
         return 0
     items = (response or {}).get('data', {}).get('items', [])
+    if not isinstance(items, list):
+        logger.warning('Unexpected Apify running-runs payload for actor_id=%s', actor_id)
+        return 0
     return len(items) if isinstance(items, list) else 0
 
 
@@ -169,8 +176,10 @@ def scrape_jobs_from_apify(normalized_keywords: list[str]) -> list[dict]:
         raise RuntimeError('Apify actor run id missing')
 
     dataset_id = ''
-    for _ in range(30):
-        time.sleep(2)
+    max_polls = max(1, settings.APIFY_RUN_STATUS_MAX_POLLS)
+    poll_seconds = max(0.5, settings.APIFY_RUN_STATUS_POLL_SECONDS)
+    for _ in range(max_polls):
+        time.sleep(poll_seconds)
         run_status_code, run_status_response = _apify_request('GET', f'/actor-runs/{run_id}')
         if run_status_code != 200:
             continue
