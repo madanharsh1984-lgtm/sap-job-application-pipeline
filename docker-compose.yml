@@ -1,13 +1,8 @@
-x-apify-host-override: &apify_host_override
-  extra_hosts:
-    # Temporary egress workaround for environments where container DNS/HTTPS to api.apify.com fails.
-    # Remove once host resolver and outbound internet from backend/worker are consistently healthy.
-    - "api.apify.com:34.241.71.15"
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: sap_postgres
+    network_mode: "bridge"
     environment:
       POSTGRES_DB: sap_pipeline
       POSTGRES_USER: postgres
@@ -17,28 +12,28 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - app_network
 
   redis:
     image: redis:7-alpine
     container_name: sap_redis
+    network_mode: "bridge"
     ports:
       - '6379:6379'
-    networks:
-      - app_network
 
   backend:
-    <<: *apify_host_override
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: sap_backend
+    network_mode: "bridge"
     env_file:
       - .env
     depends_on:
       - postgres
       - redis
+    links:
+      - postgres:postgres
+      - redis:redis
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sap_pipeline
       SECRET_KEY: ${SECRET_KEY}
@@ -55,25 +50,23 @@ services:
       APIFY_RUN_STATUS_POLL_SECONDS: ${APIFY_RUN_STATUS_POLL_SECONDS:-2}
     ports:
       - '8000:8000'
-    networks:
-      - app_network
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
     volumes:
       - ./:/workspace
 
   worker:
-    <<: *apify_host_override
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: sap_worker
+    network_mode: "bridge"
     env_file:
       - .env
     depends_on:
       - redis
       - postgres
+    links:
+      - postgres:postgres
+      - redis:redis
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sap_pipeline
       SECRET_KEY: ${SECRET_KEY}
@@ -89,28 +82,19 @@ services:
       APIFY_RUN_STATUS_MAX_POLLS: ${APIFY_RUN_STATUS_MAX_POLLS:-30}
       APIFY_RUN_STATUS_POLL_SECONDS: ${APIFY_RUN_STATUS_POLL_SECONDS:-2}
     command: celery -A app.celery_app.celery_app worker -Q celery,automation --loglevel=info
-    networks:
-      - app_network
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
     container_name: sap_frontend
+    network_mode: "bridge"
     depends_on:
       - backend
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:
       - '3000:3000'
-    networks:
-      - app_network
 
 volumes:
   postgres_data:
-
-networks:
-  app_network:
