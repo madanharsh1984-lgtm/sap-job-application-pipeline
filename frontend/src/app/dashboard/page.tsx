@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 
-type JobItem = { id: number; keyword_group: string; job_data: string };
+type JobItem = { id: number; keyword_set_id: number; job_data: string };
 
 export default function DashboardPage() {
   const [jobs, setJobs] = useState<JobItem[]>([]);
@@ -39,7 +39,7 @@ export default function DashboardPage() {
           {jobs.map((job) => (
             <tr key={job.id}>
               <td>{job.id}</td>
-              <td>{job.keyword_group}</td>
+              <td>{job.keyword_set_id}</td>
               <td>{job.job_data}</td>
             </tr>
           ))}

@@ -16,3 +16,4 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     resumes = relationship('Resume', back_populates='user', cascade='all, delete-orphan')
+    keyword_mappings = relationship('UserKeywordMap', back_populates='user', cascade='all, delete-orphan')

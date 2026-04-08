@@ -13,8 +13,22 @@ CREATE TABLE IF NOT EXISTS resumes (
   keywords TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS keyword_sets (
+  id SERIAL PRIMARY KEY,
+  keyword_hash VARCHAR(64) UNIQUE NOT NULL,
+  normalized_keywords TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_keyword_map (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  keyword_set_id INTEGER NOT NULL REFERENCES keyword_sets(id) ON DELETE CASCADE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, keyword_set_id)
+);
+
 CREATE TABLE IF NOT EXISTS jobs (
   id SERIAL PRIMARY KEY,
-  keyword_group TEXT NOT NULL,
+  keyword_set_id INTEGER NOT NULL REFERENCES keyword_sets(id) ON DELETE CASCADE,
   job_data TEXT NOT NULL
 );

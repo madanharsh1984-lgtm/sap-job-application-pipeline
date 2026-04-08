@@ -32,6 +32,7 @@ services:
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       CORS_ORIGINS: http://localhost:3000
+      APIFY_TOKEN: ${APIFY_TOKEN}
     ports:
       - '8000:8000'
     volumes:
@@ -51,6 +52,7 @@ services:
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       CORS_ORIGINS: http://localhost:3000
+      APIFY_TOKEN: ${APIFY_TOKEN}
     command: celery -A app.celery_app.celery_app worker --loglevel=info
 
   frontend:

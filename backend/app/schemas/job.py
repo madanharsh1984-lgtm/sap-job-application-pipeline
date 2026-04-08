@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class JobOut(BaseModel):
     id: int
-    keyword_group: str
+    keyword_set_id: int
     job_data: str
 
     class Config:
