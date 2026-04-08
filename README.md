@@ -1,123 +1,147 @@
-# SAP Job Application Pipeline
+# AI Job Automation SaaS
 
-Fully automated daily job application pipeline for SAP professionals — scrapes LinkedIn & Naukri for fresh openings, extracts recruiter emails, sends tailored applications, and auto-applies via Easy Apply on LinkedIn and Naukri.
+Multi-tenant SaaS platform that automatically discovers, qualifies, and applies to jobs across multiple platforms using AI.
 
----
-
-## What It Does (Daily at 9:00 AM IST)
-
-```
-Step 1 → Scrape LinkedIn recruiter posts (Apify) + job listings (JobSpy)
-Step 2 → Extract emails from posts → send tailored Gmail applications
-Step 3 → LinkedIn Easy Apply (Selenium) — 4 SAP titles, Remote, last 24h
-Step 4 → Naukri Auto-Apply (Selenium) — Remote + Delhi NCR, last 3 days
-```
+> **Governance:** All features are tracked in [`docs/FSD_v1.json`](docs/FSD_v1.json) — the single source of truth.
 
 ---
+
+## Architecture
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Backend API** | Python / FastAPI | REST API, auth, business logic |
+| **Database** | PostgreSQL | Users, jobs, applications |
+| **Queue** | Redis | Background job processing |
+| **Scraping** | Apify / JobSpy / Selenium | Multi-platform job discovery |
+| **Frontend** | (planned) React / Vite | Dashboard, onboarding, settings |
 
 ## Project Structure
 
 ```
-├── config.py              ← PRIVATE — your secrets (git-ignored, never commit)
-├── config.example.py      ← Safe template — copy → config.py and fill in values
+├── docs/
+│   └── FSD_v1.json             ← Functional Specification Document (single source of truth)
 │
-├── apify_scrape.py        ← Step 1a: Scrape LinkedIn recruiter posts via Apify
-├── apify_account_creator.py ← Creates fresh Apify accounts when credits run out
-├── jobspy_scrape.py       ← Step 1b: Scrape job listings via JobSpy (free)
+├── backend/
+│   ├── app/
+│   │   ├── api/routes/         ← FastAPI route handlers (auth, jobs)
+│   │   ├── core/               ← Config, security, database
+│   │   ├── models/             ← SQLAlchemy ORM models (User, Job, Application)
+│   │   ├── schemas/            ← Pydantic request/response schemas
+│   │   ├── services/           ← Business logic
+│   │   └── workers/            ← Background scraping & apply workers
+│   ├── tests/                  ← Backend test suite
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
 │
-├── send_sap_emails.py     ← Step 2: Send Gmail applications to email leads
+├── frontend/                   ← (planned) React dashboard
 │
-├── linkedin_easy_apply.py ← Step 3: Selenium Easy Apply on LinkedIn
-├── naukri_auto_apply.py   ← Step 4: Selenium auto-apply on Naukri
+├── docker-compose.yml          ← Local dev: API + PostgreSQL + Redis
 │
-├── Create_SAP_Job_Drafts.py    ← Utility: create Outlook drafts with resume
-├── Run_Full_Pipeline.bat       ← Run all steps manually (double-click)
-├── Run_LinkedIn_Easy_Apply.bat ← Run LinkedIn Easy Apply manually
-├── Run_Naukri_Apply.bat        ← Run Naukri apply manually
-├── Create_Apify_Account.bat    ← Create new Apify account (when credits gone)
-├── Install_JobSpy.bat          ← Install required Python packages
-│
+├── *.py                        ← Legacy pipeline scripts (being wrapped as workers)
+├── *.bat                       ← Legacy Windows automation scripts
 └── README.md
 ```
 
 ---
 
-## Setup (New Machine / New Agent)
+## Quick Start (Local Development)
 
-### 1. Prerequisites
-- Python 3.10+ → [python.org](https://python.org)
-- Google Chrome → [chrome.google.com](https://chrome.google.com)
-- Git → [git-scm.com](https://git-scm.com)
+### Option A — Docker Compose (recommended)
 
-### 2. Install dependencies
 ```bash
+docker compose up -d
+# API available at http://localhost:8000
+# Swagger docs at http://localhost:8000/docs
+```
+
+### Option B — Manual
+
+```bash
+# 1. Start PostgreSQL and Redis locally
+
+# 2. Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # fill in values
+uvicorn app.main:app --reload
+
+# 3. Legacy pipeline (optional)
 pip install python-jobspy selenium webdriver-manager python-docx requests
+cp config.example.py config.py  # fill in values
+python apify_scrape.py
 ```
-Or double-click **`Install_JobSpy.bat`**.
-
-### 3. Configure secrets
-```bash
-copy config.example.py config.py
-```
-Open `config.py` and fill in all values marked `← FILL THIS`:
-- Gmail App Password (not your regular password — create at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords))
-- LinkedIn login credentials
-- Naukri login credentials
-- Apify API token (from [console.apify.com/settings/integrations](https://console.apify.com/settings/integrations))
-- Your `BASE_DIR` (full path to this project folder)
-- ChromeDriver path (auto-managed by `webdriver-manager`, or set manually)
-
-### 4. Run manually
-```bash
-python apify_scrape.py       # Scrape LinkedIn posts → linkedin_posts_today.json
-python send_sap_emails.py    # Send emails to extracted leads
-python linkedin_easy_apply.py
-python naukri_auto_apply.py
-```
-Or double-click **`Run_Full_Pipeline.bat`**.
-
-### 5. Schedule daily automation (Windows Task Scheduler)
-The pipeline is pre-configured to run at **9:00 AM IST** via Windows Task Scheduler.
-Check Task Scheduler → `SAP_LinkedIn_EasyApply` and `SAP_Naukri_AutoApply`.
 
 ---
 
-## Scraping Tools
+## Core Modules (FSD_v1)
 
-| Tool | Type | Cost | Used For |
-|---|---|---|---|
-| **Apify** `harvestapi/linkedin-post-search` | API | $29/month (Starter) | LinkedIn recruiter posts with emails |
-| **JobSpy** | Free library | $0 | LinkedIn + Indeed job listings |
+| ID | Module | Status | Priority |
+|----|--------|--------|----------|
+| M1 | Job Discovery Engine | MVP | P0 |
+| M2 | Application Engine | MVP | P0 |
+| M3 | Resume Optimization Engine | MVP | P0 |
+| M4 | User Experience Flow (Auth, Onboarding, Dashboard) | MVP | P0 |
+| M5 | Monetization Flow (Razorpay) | MVP | P1 |
+| M6 | Admin / Intelligence Engine | Post-MVP | P2 |
 
-- **Apify** gives 50–80 recruiter email leads/day — highest value
-- **JobSpy** is the free fallback — fewer email leads but zero cost
-- When Apify credits run out → double-click `Create_Apify_Account.bat` or upgrade to Apify Starter ($29/month)
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/api/v1/auth/signup` | Register new user |
+| POST | `/api/v1/auth/login` | Login → JWT token |
+| POST | `/api/v1/auth/forgot-password` | Request password reset |
+| GET | `/api/v1/jobs` | List jobs (filters: source, remote_only) |
+| GET | `/api/v1/jobs/dashboard` | Dashboard summary |
+
+---
+
+## Deployment Strategy
+
+| Environment | Purpose | Status |
+|-------------|---------|--------|
+| Local | Development | ✅ Active |
+| Staging | Beta (100 users) | 🔜 Planned |
+| Production | 10K+ users | 🔜 Planned |
+
+Pipeline: Dev → Staging → Production (no direct production push)
 
 ---
 
 ## Security
 
-- **`config.py`** — never committed. Contains all passwords and API tokens.
+- **`config.py`** / **`.env`** — never committed. Contains all passwords and API tokens.
 - **`apify_accounts.json`** — never committed. Contains Apify account tokens.
 - **`email_sent_log.json`** — never committed. Contains recruiter emails.
 - **Resume `.docx` files** — never committed. Share separately.
 - **`.gitignore`** enforces all of the above automatically.
+- OAuth for platform integrations (LinkedIn, Naukri, Indeed).
+- User credentials encrypted at rest (AES-256).
 
 ---
 
-## Candidate Profile
+## Legacy Pipeline Scripts
 
-- **Name:** Harsh Madan
-- **Title:** SAP S/4HANA Program Manager | Data Migration Specialist
-- **Experience:** 15+ years (ECC → S/4HANA)
-- **Modules:** FICO, MM, SD, MDG, LSMW, LTMC, SLT, SAP CPI
-- **Current:** Autodesk (May 2015–Present)
-- **CTC:** 35 LPA → Expected 40 LPA | Notice: Immediate
-- **Open to:** Remote / Hybrid
+The original single-user automation scripts remain in the project root and are being progressively wrapped as multi-tenant background workers in `backend/app/workers/`.
 
----
-
-## Stats
-- Total emails sent to date: **89+**
-- Daily run: 9:00 AM IST (automated)
-- Platforms: LinkedIn, Naukri, Indeed (via JobSpy)
+| Script | Channel | Purpose |
+|--------|---------|---------|
+| `brightdata_scrape.py` | LinkedIn | Job scraping via Bright Data API |
+| `jobspy_scrape.py` | LinkedIn/Indeed | Free job scraping via JobSpy |
+| `apify_scrape.py` | LinkedIn | Recruiter post search via Apify |
+| `send_sap_emails.py` | Email | Cold outreach to recruiters |
+| `linkedin_easy_apply.py` | LinkedIn | Easy Apply automation |
+| `naukri_auto_apply.py` | Naukri | Auto-apply automation |
+| `indeed_auto_apply.py` | Indeed | Easy Apply automation |
+| `resume_builder.py` | — | ATS-optimized resume generation |
+| `headhunter_outreach.py` | Email | Headhunter firm targeting |
+| `company_outreach.py` | Email | Direct CIO/VP outreach |
+| `telegram_monitor.py` | Telegram | Job channel monitoring |
+| `linkedin_autoposter.py` | LinkedIn | Thought leadership posts |

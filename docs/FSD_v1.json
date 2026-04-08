@@ -1,0 +1,265 @@
+{
+  "meta": {
+    "document_id": "FSD_v1",
+    "version": "1.0.0",
+    "product_name": "AI Job Automation SaaS",
+    "created_at": "2026-04-08T06:04:49.000Z",
+    "updated_at": "2026-04-08T06:04:49.000Z",
+    "status": "active",
+    "mission": "Automatically discover, qualify, and apply to jobs across multiple platforms using AI.",
+    "mvp_priority": "SPEED > PERFECTION — Build minimal working pipeline first."
+  },
+  "modules": [
+    {
+      "id": "M1",
+      "name": "Job Discovery Engine",
+      "status": "mvp",
+      "description": "Scrape and aggregate job listings from multiple platforms using AI-generated search queries.",
+      "sources": [
+        { "name": "LinkedIn", "method": "scraping / API / automation", "priority": "P0" },
+        { "name": "Naukri", "method": "scraping / automation", "priority": "P0" },
+        { "name": "Indeed", "method": "scraping / API", "priority": "P1" },
+        { "name": "Google Jobs", "method": "API", "priority": "P1" },
+        { "name": "Facebook Groups", "method": "scraping", "priority": "P2" },
+        { "name": "Telegram", "method": "bot / monitoring", "priority": "P2" },
+        { "name": "Niche Communities", "method": "scraping", "priority": "P2" }
+      ],
+      "ai_tasks": [
+        "Extract keywords from user resume",
+        "Generate optimized search queries per platform"
+      ],
+      "acceptance_criteria": [
+        "System scrapes LinkedIn, Naukri, and Indeed successfully",
+        "Jobs are deduplicated and stored in PostgreSQL",
+        "User sees aggregated job listings on dashboard"
+      ],
+      "existing_scripts": [
+        "brightdata_scrape.py",
+        "brightdata_posts_scrape.py",
+        "jobspy_scrape.py",
+        "apify_scrape.py",
+        "telegram_monitor.py"
+      ]
+    },
+    {
+      "id": "M2",
+      "name": "Application Engine",
+      "status": "mvp",
+      "description": "Automate job applications via email, LinkedIn Easy Apply, and platform-specific connectors.",
+      "channels": [
+        {
+          "name": "Email Automation",
+          "tasks": [
+            "Find recruiter email",
+            "Send personalized email",
+            "Attach tailored resume"
+          ],
+          "priority": "P0"
+        },
+        {
+          "name": "LinkedIn Easy Apply",
+          "tasks": ["Automate Easy Apply flow via Selenium"],
+          "priority": "P0"
+        },
+        {
+          "name": "Naukri / Indeed",
+          "tasks": ["Apply via connectors / automation"],
+          "priority": "P1"
+        }
+      ],
+      "acceptance_criteria": [
+        "Email outreach sends personalized messages with resume",
+        "LinkedIn Easy Apply automation works end-to-end",
+        "Application status tracked per user"
+      ],
+      "existing_scripts": [
+        "send_sap_emails.py",
+        "linkedin_easy_apply.py",
+        "naukri_auto_apply.py",
+        "indeed_auto_apply.py",
+        "headhunter_outreach.py",
+        "company_outreach.py",
+        "find_company_emails.py"
+      ]
+    },
+    {
+      "id": "M3",
+      "name": "Resume Optimization Engine",
+      "status": "mvp",
+      "description": "Dynamically modify resumes per job description for ATS optimization.",
+      "features": [
+        "Parse job description for keywords",
+        "Modify resume dynamically per JD",
+        "Maintain resume versions per job",
+        "ATS-friendly formatting (single column, standard fonts, no graphics)"
+      ],
+      "acceptance_criteria": [
+        "Resume is tailored per job description",
+        "Generated resume passes ATS format checks",
+        "User can view and download generated resume versions"
+      ],
+      "existing_scripts": [
+        "resume_builder.py"
+      ]
+    },
+    {
+      "id": "M4",
+      "name": "User Experience Flow",
+      "status": "mvp",
+      "description": "Complete user-facing flow from auth to dashboard.",
+      "sub_modules": [
+        {
+          "id": "M4.A",
+          "name": "Authentication",
+          "features": ["Sign up", "Login", "Forgot password"],
+          "priority": "P0"
+        },
+        {
+          "id": "M4.B",
+          "name": "Onboarding",
+          "features": [
+            "Connect LinkedIn account",
+            "Connect Email account",
+            "Connect Naukri account",
+            "Connect Indeed account",
+            "Upload resume",
+            "Extract keywords from resume",
+            "Start job discovery"
+          ],
+          "priority": "P0"
+        },
+        {
+          "id": "M4.C",
+          "name": "Dashboard",
+          "features": [
+            "Show 'You are eligible for X jobs' count",
+            "Show ALL jobs (last 7 days)",
+            "NO APPLY BUTTON (initially — drives monetization trigger)"
+          ],
+          "priority": "P0",
+          "ux_strategy": "Display job volume to trigger conversion to paid plan."
+        },
+        {
+          "id": "M4.D",
+          "name": "Tabs",
+          "tabs": [
+            { "name": "Dashboard", "priority": "P0" },
+            { "name": "Qualified Jobs", "priority": "P0" },
+            { "name": "Resume Update", "priority": "P1" },
+            { "name": "Connections", "priority": "P1" },
+            { "name": "Account Details", "priority": "P1" }
+          ],
+          "priority": "P0"
+        }
+      ],
+      "acceptance_criteria": [
+        "User can sign up, log in, and reset password",
+        "User can connect at least one job platform",
+        "Dashboard shows job count and listings",
+        "All five tabs are navigable"
+      ],
+      "existing_scripts": []
+    },
+    {
+      "id": "M5",
+      "name": "Monetization Flow",
+      "status": "mvp",
+      "description": "Convert free users to paid via job volume awareness and Razorpay payment.",
+      "trigger": "User sees high job volume on dashboard",
+      "popup_message": "Automate your job applications daily",
+      "payment_provider": "Razorpay",
+      "features": [
+        "Conversion popup after job volume display",
+        "Razorpay payment integration",
+        "Plan management (free vs paid)",
+        "Subscription lifecycle (create, cancel, renew)"
+      ],
+      "acceptance_criteria": [
+        "Popup triggers when user views qualified jobs",
+        "Razorpay checkout flow works end-to-end",
+        "Paid users get automated apply features unlocked"
+      ],
+      "existing_scripts": []
+    },
+    {
+      "id": "M6",
+      "name": "Admin / Intelligence Engine",
+      "status": "post-mvp",
+      "description": "AI-powered research engine that discovers new job sources and market trends.",
+      "features": [
+        "AI continuously researches new job sources",
+        "Track market trends and hidden job channels",
+        "Suggest new integrations automatically"
+      ],
+      "acceptance_criteria": [
+        "Admin panel shows integration health",
+        "System logs new source suggestions"
+      ],
+      "existing_scripts": []
+    }
+  ],
+  "non_functional_requirements": {
+    "performance": {
+      "beta_users": 100,
+      "scale_target": 10000,
+      "notes": "Beta supports 100 concurrent users; architecture must scale to 10K."
+    },
+    "security": {
+      "auth": "OAuth for platform integrations",
+      "credentials": "Encrypted at rest (AES-256)",
+      "secrets_management": "Environment variables, never in source code"
+    },
+    "scalability_architecture": {
+      "backend": "Python (FastAPI)",
+      "queue": "Redis / BullMQ",
+      "scraping": "Apify / Puppeteer / Selenium",
+      "database": "PostgreSQL",
+      "storage": "S3-compatible (MinIO for local dev)"
+    }
+  },
+  "deployment": {
+    "environments": [
+      { "name": "Local", "purpose": "Development", "status": "active" },
+      { "name": "Staging", "purpose": "Beta (100 users)", "status": "planned" },
+      { "name": "Production", "purpose": "10K+ users", "status": "planned" }
+    ],
+    "pipeline": "Dev → Staging → Production",
+    "rules": [
+      "No direct production push",
+      "Mandatory testing pass before promotion"
+    ]
+  },
+  "agent_roles": {
+    "coder": "Only builds features",
+    "accio": "Only tests + validates + reports bugs",
+    "architect": "Reviews design + scalability + risks",
+    "orchestrator": "Controls flow between agents"
+  },
+  "task_protocol": {
+    "before_task": [
+      "Check FSD alignment",
+      "If mismatch → ask user for approval"
+    ],
+    "during_task": [
+      "Keep output modular",
+      "Document APIs"
+    ],
+    "after_task": [
+      "Update FSD",
+      "Assign testing to Accio"
+    ]
+  },
+  "api_registry": [],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-04-08",
+      "changes": [
+        "Initial FSD created from product specification",
+        "Mapped existing 18 Python scripts to modules M1–M3",
+        "Defined 6 core modules with acceptance criteria",
+        "Established agent roles and task protocol"
+      ]
+    }
+  ]
+}
