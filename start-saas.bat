@@ -37,15 +37,17 @@ if not exist ".env" (
     if exist ".env.example" (
         copy .env.example .env >nul
         echo Created .env from .env.example
+        echo IMPORTANT: Edit .env and set SECRET_KEY to a strong random string before deploying to production.
     ) else (
-        echo SECRET_KEY=auto-generated-key-%RANDOM%%RANDOM%> .env
-        echo Created .env with auto-generated SECRET_KEY
+        echo SECRET_KEY=CHANGE-ME-BEFORE-PRODUCTION> .env
+        echo Created .env with placeholder SECRET_KEY
+        echo IMPORTANT: Edit .env and set SECRET_KEY to a strong random string before deploying to production.
     )
 )
 
-REM Set SECRET_KEY if not already in environment
+REM Set SECRET_KEY for this session if not already set (local development only)
 if "%SECRET_KEY%"=="" (
-    set SECRET_KEY=local-dev-key-%RANDOM%%RANDOM%
+    set SECRET_KEY=local-dev-only-change-for-production
 )
 
 echo Starting all services...
