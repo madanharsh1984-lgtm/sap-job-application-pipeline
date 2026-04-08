@@ -53,7 +53,7 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       CORS_ORIGINS: http://localhost:3000
       APIFY_TOKEN: ${APIFY_TOKEN}
-    command: celery -A app.celery_app.celery_app worker --loglevel=info
+    command: celery -A app.celery_app.celery_app worker -Q celery,automation --loglevel=info
 
   frontend:
     build:
