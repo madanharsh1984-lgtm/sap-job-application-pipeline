@@ -8,6 +8,7 @@ from app.models.job import Job
 from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.admin import MetricsOut
+from app.services.local_storage_service import get_admin_stats
 
 router = APIRouter(prefix='/admin', tags=['admin'])
 
@@ -32,3 +33,8 @@ def admin_metrics(db: Session = Depends(get_db), _admin: User = Depends(require_
     jobs_count = db.query(func.count(Job.id)).scalar() or 0
     resumes_count = db.query(func.count(Resume.id)).scalar() or 0
     return MetricsOut(users_count=users_count, jobs_count=jobs_count, resumes_count=resumes_count)
+
+
+@router.get('/stats')
+def admin_stats():
+    return get_admin_stats()
