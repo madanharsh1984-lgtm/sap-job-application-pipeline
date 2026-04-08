@@ -618,6 +618,10 @@ def pause_system():
         ).first()
         if setting:
             setting.value = str(paused).lower()
+        else:
+            db.session.add(
+                AdminSetting(key="global_automation_paused", value=str(paused).lower())
+            )
         db.session.commit()
         _log_system(
             "warning",

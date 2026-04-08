@@ -85,6 +85,12 @@ function showAlert(id, message, type) {
     setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(String(str)));
+    return div.innerHTML;
+}
+
 function statusBadge(status) {
     const map = {
         'success': 'success',
@@ -100,7 +106,7 @@ function statusBadge(status) {
         'false': 'secondary'
     };
     const cls = map[String(status).toLowerCase()] || 'secondary';
-    return `<span class="badge badge-${cls}">${status}</span>`;
+    return `<span class="badge badge-${cls}">${escapeHtml(status)}</span>`;
 }
 
 function formatDate(iso) {
@@ -210,16 +216,16 @@ async function loadUsers(page = 1) {
     } else {
         tbody.innerHTML = data.users.map(u => `
             <tr>
-                <td>${u.id}</td>
-                <td><strong>${u.name}</strong><br><small>${u.email}</small></td>
-                <td>${u.role}</td>
+                <td>${escapeHtml(u.id)}</td>
+                <td><strong>${escapeHtml(u.name)}</strong><br><small>${escapeHtml(u.email)}</small></td>
+                <td>${escapeHtml(u.role)}</td>
                 <td>${statusBadge(u.is_active ? 'Active' : 'Inactive')}</td>
-                <td>${u.integrations_count}</td>
-                <td>${u.applications_count}</td>
+                <td>${escapeHtml(u.integrations_count)}</td>
+                <td>${escapeHtml(u.applications_count)}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline" onclick="viewUser(${u.id})">View</button>
+                    <button class="btn btn-sm btn-outline" onclick="viewUser(${parseInt(u.id, 10)})">View</button>
                     <button class="btn btn-sm ${u.is_active ? 'btn-danger' : 'btn-success'}"
-                        onclick="toggleUser(${u.id}, '${u.is_active ? 'deactivate' : 'activate'}')">
+                        onclick="toggleUser(${parseInt(u.id, 10)}, '${u.is_active ? 'deactivate' : 'activate'}')">
                         ${u.is_active ? 'Disable' : 'Enable'}
                     </button>
                 </td>
@@ -234,18 +240,18 @@ async function viewUser(userId) {
     if (!data) return;
 
     let details = `
-        <h3>${data.name} (${data.email})</h3>
-        <p><strong>Role:</strong> ${data.role} | <strong>Status:</strong> ${data.is_active ? 'Active' : 'Inactive'} | <strong>Paused:</strong> ${data.is_paused ? 'Yes' : 'No'}</p>
-        <p><strong>Daily Limit:</strong> ${data.daily_application_limit} | <strong>Jobs Discovered:</strong> ${data.total_jobs_discovered} | <strong>Applications Sent:</strong> ${data.total_applications_sent}</p>
-        <p><strong>Keywords:</strong> ${data.keywords?.join(', ') || 'None'}</p>
+        <h3>${escapeHtml(data.name)} (${escapeHtml(data.email)})</h3>
+        <p><strong>Role:</strong> ${escapeHtml(data.role)} | <strong>Status:</strong> ${data.is_active ? 'Active' : 'Inactive'} | <strong>Paused:</strong> ${data.is_paused ? 'Yes' : 'No'}</p>
+        <p><strong>Daily Limit:</strong> ${parseInt(data.daily_application_limit, 10)} | <strong>Jobs Discovered:</strong> ${parseInt(data.total_jobs_discovered, 10)} | <strong>Applications Sent:</strong> ${parseInt(data.total_applications_sent, 10)}</p>
+        <p><strong>Keywords:</strong> ${data.keywords?.map(k => escapeHtml(k)).join(', ') || 'None'}</p>
         <h4 style="margin-top:16px">Integrations</h4>
-        <ul>${data.integrations.map(i => `<li>${i.platform}: ${statusBadge(i.status)}</li>`).join('') || '<li>None</li>'}</ul>
+        <ul>${data.integrations.map(i => `<li>${escapeHtml(i.platform)}: ${statusBadge(i.status)}</li>`).join('') || '<li>None</li>'}</ul>
         <h4 style="margin-top:16px">Resumes</h4>
-        <ul>${data.resumes.map(r => `<li>${r.filename} ${r.is_tailored ? '(Tailored)' : ''}</li>`).join('') || '<li>None</li>'}</ul>
+        <ul>${data.resumes.map(r => `<li>${escapeHtml(r.filename)} ${r.is_tailored ? '(Tailored)' : ''}</li>`).join('') || '<li>None</li>'}</ul>
         <div style="margin-top:16px">
-            <button class="btn btn-sm btn-warning" onclick="resetIntegrations(${userId})">Reset Integrations</button>
-            <button class="btn btn-sm btn-outline" onclick="setUserLimit(${userId})">Set Daily Limit</button>
-            <button class="btn btn-sm btn-outline" onclick="pauseUser(${userId}, ${!data.is_paused})">${data.is_paused ? 'Resume' : 'Pause'} Automation</button>
+            <button class="btn btn-sm btn-warning" onclick="resetIntegrations(${parseInt(userId, 10)})">Reset Integrations</button>
+            <button class="btn btn-sm btn-outline" onclick="setUserLimit(${parseInt(userId, 10)})">Set Daily Limit</button>
+            <button class="btn btn-sm btn-outline" onclick="pauseUser(${parseInt(userId, 10)}, ${!data.is_paused})">${data.is_paused ? 'Resume' : 'Pause'} Automation</button>
         </div>
     `;
     document.getElementById('user-detail').innerHTML = details;
@@ -294,15 +300,15 @@ async function loadPayments(page = 1) {
     } else {
         tbody.innerHTML = data.payments.map(p => `
             <tr class="${p.is_suspicious ? 'suspicious' : ''}">
-                <td>${p.id}</td>
-                <td>${p.user_id}</td>
-                <td>₹${p.amount.toLocaleString()}</td>
+                <td>${escapeHtml(p.id)}</td>
+                <td>${escapeHtml(p.user_id)}</td>
+                <td>₹${Number(p.amount).toLocaleString()}</td>
                 <td>${statusBadge(p.status)}</td>
-                <td>${p.subscription_plan || '—'}</td>
+                <td>${escapeHtml(p.subscription_plan || '—')}</td>
                 <td>${formatDate(p.created_at)}</td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="refundPayment(${p.id})" ${p.status === 'refunded' ? 'disabled' : ''}>Refund</button>
-                    <button class="btn btn-sm btn-outline" onclick="flagPayment(${p.id})">${p.is_suspicious ? 'Unflag' : 'Flag'}</button>
+                    <button class="btn btn-sm btn-warning" onclick="refundPayment(${parseInt(p.id, 10)})" ${p.status === 'refunded' ? 'disabled' : ''}>Refund</button>
+                    <button class="btn btn-sm btn-outline" onclick="flagPayment(${parseInt(p.id, 10)})">${p.is_suspicious ? 'Unflag' : 'Flag'}</button>
                 </td>
             </tr>
         `).join('');
@@ -339,11 +345,11 @@ async function loadJobs(page = 1) {
     } else {
         tbody.innerHTML = data.jobs.map(j => `
             <tr>
-                <td>${j.id}</td>
-                <td><strong>${j.title}</strong><br><small>${j.company || '—'}</small></td>
-                <td>${j.platform}</td>
-                <td>${j.location || '—'}</td>
-                <td>${j.applications_count}</td>
+                <td>${escapeHtml(j.id)}</td>
+                <td><strong>${escapeHtml(j.title)}</strong><br><small>${escapeHtml(j.company || '—')}</small></td>
+                <td>${escapeHtml(j.platform)}</td>
+                <td>${escapeHtml(j.location || '—')}</td>
+                <td>${escapeHtml(j.applications_count)}</td>
                 <td>${formatDate(j.scraped_at)}</td>
             </tr>
         `).join('');
@@ -355,7 +361,7 @@ async function loadJobs(page = 1) {
         const bk = document.getElementById('job-breakdown');
         if (bk) {
             bk.innerHTML = Object.entries(data.platform_breakdown)
-                .map(([p, c]) => `<span class="badge badge-info" style="margin-right:8px">${p}: ${c}</span>`)
+                .map(([p, c]) => `<span class="badge badge-info" style="margin-right:8px">${escapeHtml(p)}: ${parseInt(c, 10)}</span>`)
                 .join('');
         }
     }
@@ -376,11 +382,11 @@ async function loadApplications(page = 1) {
     } else {
         tbody.innerHTML = data.applications.map(a => `
             <tr>
-                <td>${a.id}</td>
-                <td>${a.user_id}</td>
-                <td>${a.platform}</td>
+                <td>${escapeHtml(a.id)}</td>
+                <td>${escapeHtml(a.user_id)}</td>
+                <td>${escapeHtml(a.platform)}</td>
                 <td>${statusBadge(a.status)}</td>
-                <td>${a.failure_reason || '—'}</td>
+                <td>${escapeHtml(a.failure_reason || '—')}</td>
                 <td>${formatDate(a.applied_at)}</td>
             </tr>
         `).join('');
@@ -392,7 +398,7 @@ async function loadApplications(page = 1) {
         const fb = document.getElementById('failure-breakdown');
         if (fb) {
             fb.innerHTML = Object.entries(data.failure_breakdown)
-                .map(([r, c]) => `<span class="badge badge-danger" style="margin-right:8px">${r}: ${c}</span>`)
+                .map(([r, c]) => `<span class="badge badge-danger" style="margin-right:8px">${escapeHtml(r)}: ${parseInt(c, 10)}</span>`)
                 .join('');
         }
     }
@@ -415,9 +421,9 @@ async function loadSystemLogs(page = 1) {
     } else {
         tbody.innerHTML = data.logs.map(l => `
             <tr>
-                <td><span class="log-${l.level}">${l.level.toUpperCase()}</span></td>
-                <td>${l.source}</td>
-                <td>${l.message}</td>
+                <td><span class="log-${escapeHtml(l.level)}">${escapeHtml(l.level.toUpperCase())}</span></td>
+                <td>${escapeHtml(l.source)}</td>
+                <td>${escapeHtml(l.message)}</td>
                 <td>${formatDate(l.created_at)}</td>
             </tr>
         `).join('');
