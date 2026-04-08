@@ -193,9 +193,9 @@ def run_apify_scrape(keywords: list[str]) -> list[dict]:
         email = emails[0] if emails else None
 
         job_dict = {
-            "title": f"SAP Hiring Post — {name or 'Recruiter'}" if not company else f"{company} — SAP Hiring",
+            "title": f"{company} — Hiring" if company else f"Hiring Post — {name or 'Recruiter'}",
             "company": company or None,
-            "location": "India",
+            "location": str(record.get("location") or record.get("geo") or ""),
             "email": email,
             "post_url": post_url or None,
             "source": "apify_linkedin_posts",

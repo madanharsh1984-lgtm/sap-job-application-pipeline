@@ -48,7 +48,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       APIFY_TOKEN: ${APIFY_TOKEN:-}
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
     depends_on:
       postgres:
         condition: service_healthy

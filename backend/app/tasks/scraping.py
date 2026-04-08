@@ -72,7 +72,7 @@ def process_resume_task(self, user_id: int, resume_text: str) -> dict:
         )
 
         with _get_sync_session() as db:
-            # Step 3: Save resume
+            # Step 3: Save resume (truncate to 10k chars to prevent excessive DB storage)
             resume = Resume(
                 user_id=user_id,
                 raw_text=resume_text[:10000],
