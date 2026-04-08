@@ -64,12 +64,20 @@ def setup_logger(log_file: Path) -> logging.Logger:
 
 
 def normalize_keywords(keywords: list[str]) -> list[str]:
-    return sorted({k.strip().lower() for k in keywords if k and k.strip()})
+    normalized: set[str] = set()
+    for keyword in keywords:
+        if not keyword:
+            continue
+        stripped = keyword.strip()
+        if stripped:
+            normalized.add(stripped.lower())
+    return sorted(normalized)
 
 
 def extract_keywords(resume_content: str, max_keywords: int = 30) -> list[str]:
     tokens = re.findall(r"[A-Za-z0-9+#./-]+", resume_content or "")
-    candidates = [t for t in tokens if len(t) > 4]
+    cleaned_tokens = [t.strip(".,;:!?()[]{}\"'") for t in tokens]
+    candidates = [t for t in cleaned_tokens if len(t) > 4]
     return normalize_keywords(candidates)[:max_keywords]
 
 
@@ -91,7 +99,7 @@ def _apify_request(token: str, method: str, path: str, body: dict | None = None)
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode("utf-8", errors="ignore")
         return exc.code, {"error": raw[:800]}
-    except Exception as exc:  # noqa: BLE001
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
         return 0, {"error": str(exc)}
 
 
@@ -203,10 +211,11 @@ def save_keyword_file(paths: LocalPaths, user_email: str, keywords: list[str], k
     return target
 
 
-def load_users(path: Path) -> list[dict]:
+def load_users(path: Path, logger: logging.Logger) -> list[dict]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Unable to load users from %s: %s", path, exc)
         return []
 
 
@@ -240,7 +249,7 @@ def process_user(
         if apify_token:
             try:
                 jobs = scrape_jobs_apify(apify_token, keywords, logger)
-            except Exception as exc:  # noqa: BLE001
+            except (RuntimeError, urllib.error.URLError, TimeoutError, OSError) as exc:
                 logger.error("Apify scrape failed for %s, falling back to local scraper: %s", ks_id, exc)
                 jobs = scrape_jobs_local(keywords)
         else:
@@ -300,7 +309,7 @@ def main() -> int:
     logger.info("Local mode pipeline started | data_dir=%s", paths.root)
 
     demo_users = build_demo_users()
-    users = load_users(paths.users_json)
+    users = load_users(paths.users_json, logger)
 
     cache: dict[str, dict] = {}
     for file in paths.jobs.glob("*.json"):
@@ -309,7 +318,8 @@ def main() -> int:
             ks_id = payload.get("keyword_set_id")
             if ks_id:
                 cache[ks_id] = {"job_file": str(file), "job_count": int(payload.get("job_count", 0))}
-        except Exception:  # noqa: BLE001
+        except (json.JSONDecodeError, OSError, ValueError) as exc:
+            logger.warning("Unable to preload job cache from %s: %s", file, exc)
             continue
 
     by_email = {u.get("email"): u for u in users if isinstance(u, dict) and u.get("email")}
