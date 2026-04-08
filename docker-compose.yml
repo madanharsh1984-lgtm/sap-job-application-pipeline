@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # docker-compose.yml — JobAccelerator AI
 # ═══════════════════════════════════════════════════════════════════════════════
-# Services: FastAPI backend, PostgreSQL, Redis, Celery worker
+# Services: FastAPI backend, Next.js frontend, PostgreSQL, Redis, Celery worker
 # ═══════════════════════════════════════════════════════════════════════════════
 
 services:
@@ -49,6 +49,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       APIFY_TOKEN: ${APIFY_TOKEN:-}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      CORS_ORIGINS: "http://localhost:3000,http://frontend:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,6 +74,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  # ── Next.js Frontend ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
