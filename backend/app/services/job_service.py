@@ -191,11 +191,17 @@ def scrape_jobs_from_apify(normalized_keywords: list[str]) -> list[dict]:
             dataset_id = run_data.get('defaultDatasetId', '')
             break
         if status_value in ('FAILED', 'ABORTED', 'TIMED-OUT'):
-            raise RuntimeError(f'Apify actor run failed: run_id={run_id} status={status_value}')
+            raise RuntimeError(
+                'Apify actor run failed: '
+                f'actor_id={actor_id} run_id={run_id} status={status_value} '
+                f'keyword_count={len(normalized_keywords)}'
+            )
 
     if not dataset_id:
         raise RuntimeError(
-            f'Apify actor polling timed out before completion: run_id={run_id} last_status={last_status}'
+            'Apify actor polling timed out before completion: '
+            f'actor_id={actor_id} run_id={run_id} last_status={last_status} '
+            f'keyword_count={len(normalized_keywords)}'
         )
 
     dataset_status, dataset_response = _apify_request(
