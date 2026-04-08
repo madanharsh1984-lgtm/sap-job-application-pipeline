@@ -37,6 +37,22 @@ services:
     volumes:
       - ./:/workspace
 
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sap_worker
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sap_pipeline
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      CORS_ORIGINS: http://localhost:3000
+    command: celery -A app.celery_app.celery_app worker --loglevel=info
+
   frontend:
     build:
       context: .

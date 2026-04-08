@@ -3,7 +3,7 @@
 # =============================================================================
 
 # ── SECRETS (NEVER commit these) ──────────────────────────────────────────────
-config.py
+/config.py
 apify_accounts.json
 git_push.bat
 

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import admin, auth, user
-from app.core.config import settings
+from app.core.settings import settings
 from app.core.database import Base, engine
 from app.models import job, resume, user as user_model  # noqa: F401
 
