@@ -117,6 +117,45 @@ Check Task Scheduler → `SAP_LinkedIn_EasyApply` and `SAP_Naukri_AutoApply`.
 
 ---
 
+## Admin Portal (ADMIN_PORTAL_v1)
+
+A production-grade Admin Control Panel for managing the SaaS platform at scale.
+
+### Features
+- **Dashboard** — Real-time metrics (users, jobs, applications, revenue, failures)
+- **User Management** — Search, filter, activate/deactivate, reset integrations
+- **Payment Management** — Track Razorpay transactions, refund, flag suspicious
+- **Job & Application Tracking** — Per-platform breakdown, failure analysis
+- **System Logs** — Scraper status, API failures, automation errors
+- **AI Decision Tracking** — Keywords, resume modifications, job matching
+- **Control Panel** — Pause automation globally/per-user, set limits, change frequency
+
+### Quick Start
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set JWT secret (recommended for production)
+export ADMIN_JWT_SECRET="your-secure-secret-key"
+
+# Start admin portal
+python run_admin.py
+
+# Open http://localhost:5000
+# First visit → Create admin account via setup form
+```
+
+### Security
+- JWT authentication with role-based access (ADMIN only)
+- All admin actions logged to system_logs
+- Admin APIs restricted to authenticated admin users only
+- Password hashing via PBKDF2
+
+### Documentation
+See [FSD_ADMIN_PORTAL_v1.md](FSD_ADMIN_PORTAL_v1.md) for the full Functional Specification Document.
+
+---
+
 ## Stats
 - Total emails sent to date: **89+**
 - Daily run: 9:00 AM IST (automated)

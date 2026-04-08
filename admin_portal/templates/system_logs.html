@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs — Admin Portal</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+<div class="app-layout">
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            SAP Pipeline
+            <small>Admin Portal v1</small>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="/dashboard"><span class="icon">📊</span> Dashboard</a></li>
+            <li><a href="/users"><span class="icon">👥</span> Users</a></li>
+            <li><a href="/payments"><span class="icon">💳</span> Payments</a></li>
+            <li><a href="/jobs"><span class="icon">💼</span> Jobs &amp; Applications</a></li>
+            <li><a href="/system-logs" class="active"><span class="icon">📋</span> System Logs</a></li>
+            <li><a href="/settings"><span class="icon">⚙️</span> Settings</a></li>
+            <li><a href="#" onclick="logout()"><span class="icon">🚪</span> Logout</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>📋 System Logs &amp; Monitoring</h1>
+        </div>
+
+        <div class="search-bar">
+            <select id="log-level" class="form-control" onchange="loadSystemLogs()">
+                <option value="">All Levels</option>
+                <option value="info">Info</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+                <option value="critical">Critical</option>
+            </select>
+            <select id="log-source" class="form-control" onchange="loadSystemLogs()">
+                <option value="">All Sources</option>
+                <option value="scraper">Scraper</option>
+                <option value="api">API</option>
+                <option value="queue">Queue</option>
+                <option value="automation">Automation</option>
+                <option value="admin">Admin</option>
+                <option value="auth">Auth</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadSystemLogs()">↻ Refresh</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Log Entries</h3></div>
+            <div class="card-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Level</th>
+                            <th>Source</th>
+                            <th>Message</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody">
+                        <tr><td colspan="4" class="empty-state"><p>Loading...</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="pagination" id="logs-pagination"></div>
+    </main>
+</div>
+
+<script src="/static/js/admin.js"></script>
+<script>loadSystemLogs();</script>
+</body>
+</html>

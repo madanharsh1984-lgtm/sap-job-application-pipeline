@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users — Admin Portal</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+<div class="app-layout">
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            SAP Pipeline
+            <small>Admin Portal v1</small>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="/dashboard"><span class="icon">📊</span> Dashboard</a></li>
+            <li><a href="/users" class="active"><span class="icon">👥</span> Users</a></li>
+            <li><a href="/payments"><span class="icon">💳</span> Payments</a></li>
+            <li><a href="/jobs"><span class="icon">💼</span> Jobs &amp; Applications</a></li>
+            <li><a href="/system-logs"><span class="icon">📋</span> System Logs</a></li>
+            <li><a href="/settings"><span class="icon">⚙️</span> Settings</a></li>
+            <li><a href="#" onclick="logout()"><span class="icon">🚪</span> Logout</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>👥 User Management</h1>
+        </div>
+
+        <div id="users-alert" class="alert"></div>
+
+        <div class="search-bar">
+            <input type="text" id="user-search" class="form-control" placeholder="Search by name or email..." onkeyup="loadUsers()">
+            <select id="user-status" class="form-control" onchange="loadUsers()">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadUsers()">↻ Refresh</button>
+        </div>
+
+        <!-- User Detail Panel -->
+        <div id="user-detail" class="card" style="display:none">
+            <div class="card-header">
+                <h3>User Details</h3>
+                <button class="btn btn-sm btn-outline" onclick="document.getElementById('user-detail').style.display='none'">✕ Close</button>
+            </div>
+            <div class="card-body padded"></div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card">
+            <div class="card-header"><h3>All Users</h3></div>
+            <div class="card-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Integrations</th>
+                            <th>Applications</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="7" class="empty-state"><p>Loading...</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="pagination" id="users-pagination"></div>
+    </main>
+</div>
+
+<script src="/static/js/admin.js"></script>
+<script>loadUsers();</script>
+</body>
+</html>

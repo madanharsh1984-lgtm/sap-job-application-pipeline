@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Admin Portal</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+<div class="app-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            SAP Pipeline
+            <small>Admin Portal v1</small>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="/dashboard" class="active"><span class="icon">📊</span> Dashboard</a></li>
+            <li><a href="/users"><span class="icon">👥</span> Users</a></li>
+            <li><a href="/payments"><span class="icon">💳</span> Payments</a></li>
+            <li><a href="/jobs"><span class="icon">💼</span> Jobs &amp; Applications</a></li>
+            <li><a href="/system-logs"><span class="icon">📋</span> System Logs</a></li>
+            <li><a href="/settings"><span class="icon">⚙️</span> Settings</a></li>
+            <li><a href="#" onclick="logout()"><span class="icon">🚪</span> Logout</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1>📊 Dashboard</h1>
+            <div class="header-actions">
+                <button class="btn btn-outline btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="label">Total Users</div>
+                <div class="value" id="total-users">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Active Users (Daily)</div>
+                <div class="value" id="active-daily">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Active Users (Weekly)</div>
+                <div class="value" id="active-weekly">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Total Jobs Discovered</div>
+                <div class="value" id="total-jobs">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Total Applications Sent</div>
+                <div class="value" id="total-apps">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Failed Applications</div>
+                <div class="value danger" id="failed-apps">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Conversion Rate</div>
+                <div class="value success" id="conversion">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Revenue (Today)</div>
+                <div class="value" id="revenue-daily">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Revenue (Monthly)</div>
+                <div class="value success" id="revenue-monthly">—</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/static/js/admin.js"></script>
+<script>loadDashboard();</script>
+</body>
+</html>

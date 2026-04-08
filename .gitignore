@@ -7,6 +7,10 @@ config.py
 apify_accounts.json
 git_push.bat
 
+# ── ADMIN PORTAL ──────────────────────────────────────────────────────────────
+admin_portal.db
+admin_portal/*.db
+
 # ── RUNTIME DATA (generated, not source code) ─────────────────────────────────
 linkedin_posts_today.json
 email_sent_log.json

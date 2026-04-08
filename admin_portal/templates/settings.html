@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings — Admin Portal</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+<div class="app-layout">
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            SAP Pipeline
+            <small>Admin Portal v1</small>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="/dashboard"><span class="icon">📊</span> Dashboard</a></li>
+            <li><a href="/users"><span class="icon">👥</span> Users</a></li>
+            <li><a href="/payments"><span class="icon">💳</span> Payments</a></li>
+            <li><a href="/jobs"><span class="icon">💼</span> Jobs &amp; Applications</a></li>
+            <li><a href="/system-logs"><span class="icon">📋</span> System Logs</a></li>
+            <li><a href="/settings" class="active"><span class="icon">⚙️</span> Settings</a></li>
+            <li><a href="#" onclick="logout()"><span class="icon">🚪</span> Logout</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>⚙️ Settings &amp; Controls</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
+        </div>
+
+        <div id="settings-alert" class="alert"></div>
+
+        <!-- Automation Controls -->
+        <div class="card">
+            <div class="card-header"><h3>🎛️ Automation Controls</h3></div>
+            <div class="card-body padded">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Pause ALL Automation</h4>
+                        <p>Stops all scraping, applications, and outreach globally</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-global-pause" onchange="pauseAllAutomation()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Default Daily Application Limit</h4>
+                        <p>Maximum applications per user per day</p>
+                    </div>
+                    <input type="number" id="setting-daily-limit" class="form-control" style="width:100px" min="1" max="500" value="50">
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Scraping Frequency (minutes)</h4>
+                        <p>How often the scraper runs to discover new jobs</p>
+                    </div>
+                    <input type="number" id="setting-scraping-freq" class="form-control" style="width:100px" min="15" max="1440" value="60">
+                </div>
+            </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="card">
+            <div class="card-header"><h3>ℹ️ System Information</h3></div>
+            <div class="card-body padded">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Admin Portal Version</h4>
+                        <p>ADMIN_PORTAL_v1</p>
+                    </div>
+                    <span class="badge badge-success">Active</span>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Database</h4>
+                        <p>SQLite (admin_portal.db)</p>
+                    </div>
+                    <span class="badge badge-info">Local</span>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Authentication</h4>
+                        <p>JWT + Role-based Access (ADMIN only)</p>
+                    </div>
+                    <span class="badge badge-success">Secure</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/static/js/admin.js"></script>
+<script>loadSettings();</script>
+</body>
+</html>
