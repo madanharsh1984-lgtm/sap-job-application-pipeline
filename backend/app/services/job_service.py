@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from app.models.job import Job
 from app.services.script_runner import REPO_ROOT, run_script
 
+MAX_JOBS_TO_INGEST = 200
+
 
 def _jobs_file_path() -> Path:
     return REPO_ROOT / 'linkedin_posts_today.json'
@@ -28,7 +30,7 @@ def ingest_jobs_from_file(db: Session, keyword_group: str = 'SAP') -> int:
         return 0
 
     inserted = 0
-    for record in records[:200]:
+    for record in records[:MAX_JOBS_TO_INGEST]:
         job = Job(keyword_group=keyword_group, job_data=json.dumps(record))
         db.add(job)
         inserted += 1

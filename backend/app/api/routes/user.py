@@ -12,6 +12,8 @@ from app.schemas.job import JobOut
 from app.services.job_service import ingest_jobs_from_file, list_jobs, trigger_scrape
 
 router = APIRouter(tags=['user'])
+MIN_KEYWORD_LENGTH = 4
+MAX_KEYWORDS = 30
 
 
 @router.post('/api/user/onboard')
@@ -29,7 +31,7 @@ def onboard_resume(
     if not resume_content.strip():
         raise HTTPException(status_code=400, detail='Resume content is required')
 
-    keywords = [w.lower() for w in resume_content.split() if len(w) > 4][:30]
+    keywords = [w.lower() for w in resume_content.split() if len(w) > MIN_KEYWORD_LENGTH][:MAX_KEYWORDS]
     resume = Resume(user_id=user.id, content=resume_content, keywords=','.join(keywords))
     db.add(resume)
     db.commit()
