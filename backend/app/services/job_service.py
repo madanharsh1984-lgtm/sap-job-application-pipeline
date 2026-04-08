@@ -114,13 +114,45 @@ def _parse_apify_record(record: dict) -> dict:
     }
 
 
+def _count_running_actor_runs(actor_id: str) -> int:
+    status, response = _apify_request(
+        'GET',
+        f'/acts/{actor_id}/runs?status=RUNNING&desc=1&limit=100',
+    )
+    if status != 200:
+        return 0
+    items = (response or {}).get('data', {}).get('items', [])
+    return len(items) if isinstance(items, list) else 0
+
+
+def _wait_for_apify_capacity(actor_id: str) -> None:
+    limit = max(1, settings.APIFY_MAX_CONCURRENT_RUNS)
+    poll_seconds = max(0.5, settings.APIFY_CONCURRENCY_POLL_SECONDS)
+    deadline = time.time() + max(1, settings.APIFY_CONCURRENCY_WAIT_SECONDS)
+
+    while True:
+        running = _count_running_actor_runs(actor_id)
+        if running < limit:
+            return
+        if time.time() >= deadline:
+            raise RuntimeError(
+                f'Apify concurrency limit wait timed out: running={running} limit={limit}'
+            )
+        time.sleep(poll_seconds)
+
+
 def scrape_jobs_from_apify(normalized_keywords: list[str]) -> list[dict]:
     if not settings.APIFY_TOKEN:
         raise RuntimeError('APIFY_TOKEN is not configured')
+    if not settings.APIFY_ACTOR_ID:
+        raise RuntimeError('APIFY_ACTOR_ID is not configured')
+
+    actor_id = settings.APIFY_ACTOR_ID
+    _wait_for_apify_capacity(actor_id)
 
     status, run_response = _apify_request(
         'POST',
-        f"/acts/{settings.APIFY_ACTOR_ID}/runs",
+        f'/acts/{actor_id}/runs',
         body={
             'searchQueries': normalized_keywords,
             'maxPosts': settings.APIFY_MAX_POSTS,

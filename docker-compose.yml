@@ -33,6 +33,11 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       CORS_ORIGINS: http://localhost:3000
       APIFY_TOKEN: ${APIFY_TOKEN}
+      APIFY_ACTOR_ID: ${APIFY_ACTOR_ID:-harvestapi~linkedin-post-search}
+      APIFY_MAX_POSTS: ${APIFY_MAX_POSTS:-50}
+      APIFY_MAX_CONCURRENT_RUNS: ${APIFY_MAX_CONCURRENT_RUNS:-2}
+      APIFY_CONCURRENCY_WAIT_SECONDS: ${APIFY_CONCURRENCY_WAIT_SECONDS:-180}
+      APIFY_CONCURRENCY_POLL_SECONDS: ${APIFY_CONCURRENCY_POLL_SECONDS:-3}
     ports:
       - '8000:8000'
     volumes:
@@ -53,6 +58,11 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       CORS_ORIGINS: http://localhost:3000
       APIFY_TOKEN: ${APIFY_TOKEN}
+      APIFY_ACTOR_ID: ${APIFY_ACTOR_ID:-harvestapi~linkedin-post-search}
+      APIFY_MAX_POSTS: ${APIFY_MAX_POSTS:-50}
+      APIFY_MAX_CONCURRENT_RUNS: ${APIFY_MAX_CONCURRENT_RUNS:-2}
+      APIFY_CONCURRENCY_WAIT_SECONDS: ${APIFY_CONCURRENCY_WAIT_SECONDS:-180}
+      APIFY_CONCURRENCY_POLL_SECONDS: ${APIFY_CONCURRENCY_POLL_SECONDS:-3}
     command: celery -A app.celery_app.celery_app worker -Q celery,automation --loglevel=info
 
   frontend:

@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     APIFY_TOKEN: str = ''
     APIFY_ACTOR_ID: str = 'harvestapi~linkedin-post-search'
     APIFY_MAX_POSTS: int = 50
+    APIFY_MAX_CONCURRENT_RUNS: int = 2
+    APIFY_CONCURRENCY_WAIT_SECONDS: int = 180
+    APIFY_CONCURRENCY_POLL_SECONDS: float = 3.0
 
 
 settings = Settings()
