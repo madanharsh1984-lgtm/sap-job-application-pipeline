@@ -29,7 +29,8 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<Respon
     // Token expired or invalid — clear and redirect
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      const isAdminPath = window.location.pathname.startsWith("/admin");
+      window.location.href = isAdminPath ? "/admin/login" : "/login";
     }
   }
 

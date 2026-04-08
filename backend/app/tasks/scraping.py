@@ -65,10 +65,6 @@ def process_resume_task(self, user_id: int, resume_text: str) -> dict:
     to limit database row size. Keyword extraction runs on the full text.
 
     Returns dict with keyword_hash and is_new.
-      6. If new keyword_set → trigger Apify
-      7. If existing → user gets shared results immediately
-
-    Returns dict with keyword_hash and is_new.
     """
     try:
         # Step 1–2: Extract, normalize, hash
