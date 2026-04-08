@@ -176,6 +176,7 @@ def scrape_jobs_from_apify(normalized_keywords: list[str]) -> list[dict]:
         raise RuntimeError('Apify actor run id missing')
 
     dataset_id = ''
+    last_status = 'UNKNOWN'
     max_polls = max(1, settings.APIFY_RUN_STATUS_MAX_POLLS)
     poll_seconds = max(0.5, settings.APIFY_RUN_STATUS_POLL_SECONDS)
     for _ in range(max_polls):
@@ -185,14 +186,17 @@ def scrape_jobs_from_apify(normalized_keywords: list[str]) -> list[dict]:
             continue
         run_data = (run_status_response or {}).get('data', {})
         status_value = run_data.get('status')
+        last_status = status_value or last_status
         if status_value == 'SUCCEEDED':
             dataset_id = run_data.get('defaultDatasetId', '')
             break
         if status_value in ('FAILED', 'ABORTED', 'TIMED-OUT'):
-            raise RuntimeError(f'Apify actor finished with status={status_value}')
+            raise RuntimeError(f'Apify actor run failed: run_id={run_id} status={status_value}')
 
     if not dataset_id:
-        raise RuntimeError('Apify actor did not provide dataset id')
+        raise RuntimeError(
+            f'Apify actor polling timed out before completion: run_id={run_id} last_status={last_status}'
+        )
 
     dataset_status, dataset_response = _apify_request(
         'GET',
