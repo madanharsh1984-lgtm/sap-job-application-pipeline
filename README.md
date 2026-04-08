@@ -31,40 +31,49 @@ A multi-user SaaS version of the pipeline with a web UI, API, and background job
 
 ### Quick Start (Docker)
 
-**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+**Prerequisites:**
+- [Git](https://git-scm.com/download/win) installed
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed **and running**
 
-**Step 1:** Clone the repo and `cd` into it:
-```bash
+---
+
+#### Windows CMD (copy-paste each line one at a time)
+
+```cmd
 git clone https://github.com/madanharsh1984-lgtm/sap-job-application-pipeline.git
 cd sap-job-application-pipeline
-```
-
-**Step 2:** Create a `.env` file from the template:
-```bash
-cp .env.example .env      # Linux/macOS
-copy .env.example .env    # Windows CMD
-```
-Edit `.env` and set `SECRET_KEY` to any random string.
-
-**Step 3:** Start all services:
-```bash
+copy .env.example .env
+set SECRET_KEY=change-me-to-a-random-string
 docker-compose up --build
 ```
 
-> **Windows CMD users:** If you prefer setting environment variables inline instead of using `.env`:
-> ```cmd
-> set SECRET_KEY=change-me-to-a-random-string
-> docker-compose up --build
-> ```
-> Do **not** use `export` — that is Linux/macOS syntax. Do **not** use `#` for comments in CMD.
+> ⚠️ **Windows CMD tips:**
+> - Do **not** use `export` — that is Linux/macOS only. Use `set` instead.
+> - Do **not** type lines starting with `#` — CMD does not support comments.
+> - You must `cd` into the cloned folder before running `docker-compose`.
+> - Or double-click **`start-saas.bat`** (see below) for one-click setup.
 
-> **PowerShell users:**
-> ```powershell
-> $env:SECRET_KEY="change-me-to-a-random-string"
-> docker-compose up --build
-> ```
+#### Windows PowerShell
 
-**Step 4:** Access the application:
+```powershell
+git clone https://github.com/madanharsh1984-lgtm/sap-job-application-pipeline.git
+cd sap-job-application-pipeline
+Copy-Item .env.example .env
+$env:SECRET_KEY="change-me-to-a-random-string"
+docker-compose up --build
+```
+
+#### Linux / macOS
+
+```bash
+git clone https://github.com/madanharsh1984-lgtm/sap-job-application-pipeline.git
+cd sap-job-application-pipeline
+cp .env.example .env
+export SECRET_KEY="change-me-to-a-random-string"
+docker-compose up --build
+```
+
+Once all services are running, open your browser:
 
 | URL | Purpose |
 |---|---|
@@ -94,6 +103,12 @@ docker-compose exec postgres psql -U postgres -d jobaccelerator -c \
 ## Project Structure
 
 ```
+├── docker-compose.yml         ← SaaS: orchestrates all services
+├── .env.example               ← SaaS: environment variable template
+├── start-saas.bat             ← SaaS: one-click Windows launcher
+├── backend/                   ← SaaS: FastAPI backend + Celery worker
+├── frontend/                  ← SaaS: Next.js web UI
+│
 ├── config.py              ← PRIVATE — your secrets (git-ignored, never commit)
 ├── config.example.py      ← Safe template — copy → config.py and fill in values
 │
