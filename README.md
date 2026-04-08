@@ -37,6 +37,29 @@ Then open:
 
 ---
 
+## Local Mode (No Docker, File Storage)
+
+Run the local file-backed pipeline:
+
+```bash
+python local_mode_pipeline.py
+```
+
+Optional overrides:
+
+- `LOCAL_DATA_DIR` (default: `C:\Users\madan\OneDrive\Desktop\Linkdin Job\data`)
+- `APIFY_TOKEN` (if set, Apify scraping is attempted; otherwise local scraper fallback is used)
+
+Generated outputs:
+
+- `jobs/*.json`
+- `logs/system.log`
+- `resumes/*`
+- `keywords/*`
+- `users.json`
+
+---
+
 ## What It Does (Daily at 9:00 AM IST)
 
 ```
