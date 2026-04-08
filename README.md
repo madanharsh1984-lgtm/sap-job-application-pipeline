@@ -4,6 +4,39 @@ Fully automated daily job application pipeline for SAP professionals — scrapes
 
 ---
 
+## SaaS MVP (New)
+
+This repository now also includes a SaaS MVP stack:
+
+- **Backend:** FastAPI (`/backend`)
+- **Frontend:** Next.js (`/frontend`)
+- **Database:** PostgreSQL (`users`, `resumes`, `jobs`)
+- **Auth:** JWT + bcrypt
+- **RBAC:** `USER` and `ADMIN` roles
+- **Infra:** Docker Compose (`frontend`, `backend`, `postgres`, `redis`)
+
+### SaaS Quick Start (Docker)
+
+```bash
+docker-compose up --build
+```
+
+Then open:
+
+- Frontend: `http://localhost:3000`
+- Backend API docs: `http://localhost:8000/docs`
+
+### Core API Routes
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/user/onboard`
+- `GET /api/jobs`
+- `GET /admin/users` (ADMIN only)
+- `GET /admin/metrics` (ADMIN only)
+
+---
+
 ## What It Does (Daily at 9:00 AM IST)
 
 ```

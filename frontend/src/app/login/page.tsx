@@ -16,8 +16,15 @@ export default function LoginPage() {
       setToken(response.data.access_token);
       setMessage('Login successful. Redirecting to dashboard...');
       window.location.href = '/dashboard';
-    } catch (error: any) {
-      setMessage(error?.response?.data?.detail || 'Login failed');
+    } catch (error: unknown) {
+      const detail =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
+          ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined;
+      setMessage(detail ?? 'Login failed');
     }
   };
 

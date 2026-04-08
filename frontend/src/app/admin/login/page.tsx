@@ -16,8 +16,15 @@ export default function AdminLoginPage() {
       setToken(response.data.access_token);
       setMessage('Login successful. Redirecting to admin dashboard...');
       window.location.href = '/admin/dashboard';
-    } catch (error: any) {
-      setMessage(error?.response?.data?.detail || 'Admin login failed');
+    } catch (error: unknown) {
+      const detail =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
+          ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined;
+      setMessage(detail ?? 'Admin login failed');
     }
   };
 

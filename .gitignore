@@ -20,7 +20,7 @@ daily_pipeline_summary.json
 
 # ── LOGS & DEBUG ──────────────────────────────────────────────────────────────
 *.log
-*.txt
+/*.txt
 naukri_run_log.txt
 
 # ── SCREENSHOTS / DEBUG IMAGES ────────────────────────────────────────────────
