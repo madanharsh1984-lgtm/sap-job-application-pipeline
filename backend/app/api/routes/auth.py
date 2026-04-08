@@ -42,7 +42,7 @@ async def signup(payload: UserCreate, db: AsyncSession = Depends(get_db)):
         full_name=payload.full_name,
     )
     db.add(user)
-    await db.commit()
+    await db.flush()
     await db.refresh(user)
     return user
 

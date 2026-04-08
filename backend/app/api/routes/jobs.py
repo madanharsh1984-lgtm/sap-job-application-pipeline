@@ -3,18 +3,47 @@
 FSD Modules: M1 - Job Discovery Engine, M4.C - Dashboard
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.database import get_db
+from backend.app.core.security import decode_access_token
 from backend.app.models.application import Application
 from backend.app.models.job import Job
+from backend.app.models.user import User
 from backend.app.schemas.job import DashboardResponse, JobListResponse, JobResponse
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+bearer_scheme = HTTPBearer()
+
+
+async def _get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Extract and validate the current user from the JWT token."""
+    payload = decode_access_token(credentials.credentials)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
+    return user
 
 
 @router.get("", response_model=JobListResponse)
@@ -46,7 +75,7 @@ async def list_jobs(
 
 @router.get("/dashboard", response_model=DashboardResponse)
 async def dashboard(
-    user_id: str = Query(..., description="Current user ID"),
+    current_user: User = Depends(_get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get dashboard summary: eligible jobs, total recent jobs, applications sent."""
@@ -60,7 +89,7 @@ async def dashboard(
 
     applications_sent = (
         await db.execute(
-            select(func.count()).where(Application.user_id == user_id)
+            select(func.count()).where(Application.user_id == current_user.id)
         )
     ).scalar() or 0
 
@@ -68,5 +97,5 @@ async def dashboard(
         eligible_job_count=total_jobs,
         total_jobs_last_7_days=total_jobs,
         applications_sent=applications_sent,
-        plan="free",
+        plan=current_user.plan,
     )
