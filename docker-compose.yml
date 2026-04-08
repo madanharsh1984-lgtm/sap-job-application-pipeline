@@ -1,6 +1,7 @@
 x-apify-host-override: &apify_host_override
   extra_hosts:
-    # Temporary egress workaround for environments with broken container DNS resolution.
+    # Temporary egress workaround for environments where container DNS/HTTPS to api.apify.com fails.
+    # Remove once host resolver and outbound internet from backend/worker are consistently healthy.
     - "api.apify.com:34.241.71.15"
 
 services:
