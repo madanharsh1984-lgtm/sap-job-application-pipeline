@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,7 +8,13 @@ from app.core.settings import settings
 from app.core.database import Base, engine
 from app.models import job, resume, user as user_model  # noqa: F401
 
-app = FastAPI(title='SAP Job Application SaaS MVP')
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title='SAP Job Application SaaS MVP', lifespan=lifespan)
 
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(',') if origin.strip()]
 app.add_middleware(
@@ -16,12 +24,6 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
-
-
-@app.on_event('startup')
-def on_startup() -> None:
-    Base.metadata.create_all(bind=engine)
-
 
 @app.get('/health')
 def health():
