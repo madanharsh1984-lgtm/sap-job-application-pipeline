@@ -17,6 +17,7 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
+    role: str = "user"
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -67,6 +68,45 @@ class KeywordSetResponse(BaseModel):
     id: int
     keyword_hash: str
     normalized_keywords: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Admin ────────────────────────────────────────────────────────────────────
+
+class AdminMetrics(BaseModel):
+    total_users: int
+    total_jobs: int
+    total_keyword_sets: int
+    total_resumes: int
+
+
+class AdminUserResponse(BaseModel):
+    id: int
+    email: str
+    role: str
+    created_at: datetime
+    resume_count: int = 0
+    keyword_set_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class AdminUserListResponse(BaseModel):
+    total: int
+    users: list[AdminUserResponse]
+
+
+class AdminJobListResponse(BaseModel):
+    total: int
+    jobs: list[JobResponse]
+
+
+class MeResponse(BaseModel):
+    id: int
+    email: str
+    role: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

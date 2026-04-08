@@ -8,9 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.database import get_db
-from backend.app.core.security import hash_password, verify_password, create_access_token
+from backend.app.core.security import hash_password, verify_password, create_access_token, get_current_user
 from backend.app.models.user import User
-from backend.app.schemas.api import UserCreate, UserResponse, Token
+from backend.app.schemas.api import UserCreate, UserResponse, Token, MeResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -29,6 +29,7 @@ async def register(body: UserCreate, db: AsyncSession = Depends(get_db)):
     user = User(
         email=body.email,
         hashed_password=hash_password(body.password),
+        role="user",
     )
     db.add(user)
     await db.flush()
@@ -51,5 +52,11 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = create_access_token(data={"sub": str(user.id)})
+    token = create_access_token(data={"sub": str(user.id), "role": user.role})
     return Token(access_token=token)
+
+
+@router.get("/me", response_model=MeResponse)
+async def me(user: User = Depends(get_current_user)):
+    """Return the current authenticated user's info."""
+    return user

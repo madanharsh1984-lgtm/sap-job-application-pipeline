@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.core.config import settings
-from backend.app.api.routes import auth, jobs
+from backend.app.api.routes import auth, jobs, admin
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
@@ -30,6 +30,7 @@ app.add_middleware(
 # Routes
 app.include_router(auth.router)
 app.include_router(jobs.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")

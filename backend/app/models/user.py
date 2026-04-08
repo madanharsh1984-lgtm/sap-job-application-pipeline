@@ -16,6 +16,11 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="user",
+        server_default="user",
+        comment="User role: 'user' or 'admin'"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -23,3 +28,7 @@ class User(Base):
     # Relationships
     resumes: Mapped[list["Resume"]] = relationship(back_populates="user", lazy="selectin")  # noqa: F821
     keyword_maps: Mapped[list["UserKeywordMap"]] = relationship(back_populates="user", lazy="selectin")  # noqa: F821
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
