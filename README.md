@@ -1,123 +1,330 @@
-# SAP Job Application Pipeline
+# JobAccelerator AI
 
-Fully automated daily job application pipeline for SAP professionals — scrapes LinkedIn & Naukri for fresh openings, extracts recruiter emails, sends tailored applications, and auto-applies via Easy Apply on LinkedIn and Naukri.
+**AI-Powered Job Application Pipeline — Production-Ready SaaS System**
+
+A scalable, modular SaaS platform that automates job searching, application tracking, resume tailoring, and auto-applying to job postings. Built to support up to 10,000 users.
 
 ---
 
-## What It Does (Daily at 9:00 AM IST)
+## Architecture
 
 ```
-Step 1 → Scrape LinkedIn recruiter posts (Apify) + job listings (JobSpy)
-Step 2 → Extract emails from posts → send tailored Gmail applications
-Step 3 → LinkedIn Easy Apply (Selenium) — 4 SAP titles, Remote, last 24h
-Step 4 → Naukri Auto-Apply (Selenium) — Remote + Delhi NCR, last 3 days
+┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
+│   Frontend   │───▶│   Backend    │───▶│   PostgreSQL    │
+│  (Next.js)   │    │  (FastAPI)   │    │    Database      │
+│  Port 3000   │    │  Port 8000   │    │    Port 5432     │
+└─────────────┘    └──────┬───────┘    └─────────────────┘
+                          │
+                    ┌─────▼──────┐    ┌─────────────────┐
+                    │   Redis    │───▶│     Worker       │
+                    │  (Queue)   │    │   (Celery)       │
+                    │  Port 6379 │    │  Background Jobs │
+                    └────────────┘    └────────┬────────┘
+                                               │
+                                      ┌────────▼────────┐
+                                      │ Browser Service  │
+                                      │  (Playwright)    │
+                                      │   Port 9000      │
+                                      └─────────────────┘
 ```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 14 (App Router) + Tailwind CSS |
+| Backend | FastAPI (Python 3.11) |
+| Database | PostgreSQL 16 |
+| Queue | Redis 7 + Celery 5 |
+| Automation | Playwright (Chromium) |
+| Storage | AWS S3 (mock locally) |
+| Containers | Docker + Docker Compose |
+| CI/CD | GitHub Actions |
 
 ---
 
 ## Project Structure
 
 ```
-├── config.py              ← PRIVATE — your secrets (git-ignored, never commit)
-├── config.example.py      ← Safe template — copy → config.py and fill in values
+Root/
+├── frontend/                  # Next.js frontend application
+│   ├── src/
+│   │   ├── app/              # App Router pages
+│   │   │   ├── login/        # Login page
+│   │   │   ├── signup/       # Signup page
+│   │   │   ├── dashboard/    # Protected dashboard
+│   │   │   │   ├── jobs/     # Job management
+│   │   │   │   ├── applications/  # Application tracking
+│   │   │   │   └── resumes/  # Resume management
+│   │   │   └── admin/        # Admin panel
+│   │   ├── components/       # Shared components
+│   │   └── lib/              # API helpers
+│   ├── Dockerfile
+│   └── package.json
 │
-├── apify_scrape.py        ← Step 1a: Scrape LinkedIn recruiter posts via Apify
-├── apify_account_creator.py ← Creates fresh Apify accounts when credits run out
-├── jobspy_scrape.py       ← Step 1b: Scrape job listings via JobSpy (free)
+├── backend/                   # FastAPI backend application
+│   ├── app/
+│   │   ├── api/routes/       # API route handlers
+│   │   │   ├── auth.py       # Authentication endpoints
+│   │   │   ├── jobs.py       # Job CRUD endpoints
+│   │   │   ├── applications.py  # Application endpoints
+│   │   │   ├── resumes.py    # Resume endpoints
+│   │   │   └── admin.py      # Admin endpoints
+│   │   ├── core/             # Core configuration
+│   │   │   ├── config.py     # Settings management
+│   │   │   ├── database.py   # Database setup
+│   │   │   └── security.py   # JWT + password hashing
+│   │   ├── models/           # SQLAlchemy models
+│   │   ├── schemas/          # Pydantic schemas
+│   │   ├── services/         # Business logic services
+│   │   └── tests/            # Pytest test suite
+│   ├── alembic/              # Database migrations
+│   ├── Dockerfile
+│   └── requirements.txt
 │
-├── send_sap_emails.py     ← Step 2: Send Gmail applications to email leads
+├── worker/                    # Celery background workers
+│   ├── tasks/
+│   │   ├── scraping.py       # Job scraping tasks
+│   │   ├── resume.py         # Resume generation tasks
+│   │   └── email_tasks.py    # Email notification tasks
+│   ├── celery_app.py         # Celery configuration
+│   ├── Dockerfile
+│   └── requirements.txt
 │
-├── linkedin_easy_apply.py ← Step 3: Selenium Easy Apply on LinkedIn
-├── naukri_auto_apply.py   ← Step 4: Selenium auto-apply on Naukri
+├── browser-service/           # Playwright automation service
+│   ├── scrapers/
+│   │   ├── base.py           # Abstract base scraper
+│   │   ├── linkedin.py       # LinkedIn job scraper
+│   │   └── indeed.py         # Indeed job scraper
+│   ├── browser_pool.py       # Browser pool manager
+│   ├── main.py               # FastAPI service
+│   ├── Dockerfile
+│   └── requirements.txt
 │
-├── Create_SAP_Job_Drafts.py    ← Utility: create Outlook drafts with resume
-├── Run_Full_Pipeline.bat       ← Run all steps manually (double-click)
-├── Run_LinkedIn_Easy_Apply.bat ← Run LinkedIn Easy Apply manually
-├── Run_Naukri_Apply.bat        ← Run Naukri apply manually
-├── Create_Apify_Account.bat    ← Create new Apify account (when credits gone)
-├── Install_JobSpy.bat          ← Install required Python packages
+├── infra/                     # Infrastructure configs
+│   ├── docker-compose.prod.yml  # Production overrides
+│   ├── nginx.conf             # Reverse proxy config
+│   └── init.sql               # Database initialization
 │
+├── .github/workflows/
+│   └── ci.yml                 # CI/CD pipeline
+│
+├── docker-compose.yml         # Development orchestration
+├── .env                       # Environment variables (git-ignored)
 └── README.md
 ```
 
 ---
 
-## Setup (New Machine / New Agent)
+## Database Schema
 
-### 1. Prerequisites
-- Python 3.10+ → [python.org](https://python.org)
-- Google Chrome → [chrome.google.com](https://chrome.google.com)
-- Git → [git-scm.com](https://git-scm.com)
-
-### 2. Install dependencies
-```bash
-pip install python-jobspy selenium webdriver-manager python-docx requests
-```
-Or double-click **`Install_JobSpy.bat`**.
-
-### 3. Configure secrets
-```bash
-copy config.example.py config.py
-```
-Open `config.py` and fill in all values marked `← FILL THIS`:
-- Gmail App Password (not your regular password — create at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords))
-- LinkedIn login credentials
-- Naukri login credentials
-- Apify API token (from [console.apify.com/settings/integrations](https://console.apify.com/settings/integrations))
-- Your `BASE_DIR` (full path to this project folder)
-- ChromeDriver path (auto-managed by `webdriver-manager`, or set manually)
-
-### 4. Run manually
-```bash
-python apify_scrape.py       # Scrape LinkedIn posts → linkedin_posts_today.json
-python send_sap_emails.py    # Send emails to extracted leads
-python linkedin_easy_apply.py
-python naukri_auto_apply.py
-```
-Or double-click **`Run_Full_Pipeline.bat`**.
-
-### 5. Schedule daily automation (Windows Task Scheduler)
-The pipeline is pre-configured to run at **9:00 AM IST** via Windows Task Scheduler.
-Check Task Scheduler → `SAP_LinkedIn_EasyApply` and `SAP_Naukri_AutoApply`.
+| Table | Description |
+|-------|-------------|
+| `users` | User accounts with roles (admin/user) |
+| `jobs` | Scraped/tracked job postings |
+| `applications` | Job application records |
+| `resumes` | Resume files and metadata |
+| `payments` | Payment/subscription records |
+| `logs` | System activity logs |
 
 ---
 
-## Scraping Tools
+## Quick Start (Local Development)
 
-| Tool | Type | Cost | Used For |
-|---|---|---|---|
-| **Apify** `harvestapi/linkedin-post-search` | API | $29/month (Starter) | LinkedIn recruiter posts with emails |
-| **JobSpy** | Free library | $0 | LinkedIn + Indeed job listings |
+### Prerequisites
 
-- **Apify** gives 50–80 recruiter email leads/day — highest value
-- **JobSpy** is the free fallback — fewer email leads but zero cost
-- When Apify credits run out → double-click `Create_Apify_Account.bat` or upgrade to Apify Starter ($29/month)
+- Docker & Docker Compose
+- Git
+
+### 1. Clone and Configure
+
+```bash
+git clone <repository-url>
+cd sap-job-application-pipeline
+
+# Edit .env if needed (defaults work for local development)
+```
+
+### 2. Start All Services
+
+```bash
+docker-compose up --build
+```
+
+This starts:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Browser Service**: http://localhost:9000
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6379
+
+### 3. Verify Health
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:9000/health
+```
+
+---
+
+## Manual Service Run (Without Docker)
+
+### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/jobaccelerator
+export REDIS_URL=redis://localhost:6379/0
+export SECRET_KEY=dev-secret-key
+uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+```
+
+### Worker
+
+```bash
+cd worker
+pip install -r requirements.txt
+export REDIS_URL=redis://localhost:6379/0
+celery -A worker.celery_app worker --loglevel=info
+```
+
+### Browser Service
+
+```bash
+cd browser-service
+pip install -r requirements.txt
+playwright install chromium
+uvicorn main:app --port 9000
+```
+
+---
+
+## API Endpoints
+
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login (returns JWT) |
+| GET | `/api/auth/me` | Get current user |
+
+### Jobs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/jobs/` | List user's jobs |
+| POST | `/api/jobs/` | Create job |
+| GET | `/api/jobs/{id}` | Get job details |
+| PUT | `/api/jobs/{id}` | Update job |
+| DELETE | `/api/jobs/{id}` | Delete job |
+
+### Applications
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/applications/` | List applications |
+| POST | `/api/applications/` | Create application |
+| GET | `/api/applications/{id}` | Get application |
+| PUT | `/api/applications/{id}` | Update application |
+
+### Resumes
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/resumes/` | List resumes |
+| POST | `/api/resumes/upload` | Upload resume |
+| GET | `/api/resumes/{id}` | Get resume |
+| DELETE | `/api/resumes/{id}` | Delete resume |
+
+### Admin (Admin role required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/users` | List all users |
+| GET | `/api/admin/users/{id}` | Get user details |
+| PUT | `/api/admin/users/{id}/role` | Update user role |
+| GET | `/api/admin/stats` | System statistics |
+| GET | `/api/admin/logs` | System logs |
+
+---
+
+## Production Deployment
+
+### 1. Configure Environment
+
+```bash
+# Generate a secure secret key
+export SECRET_KEY=$(openssl rand -hex 32)
+
+# Update .env with production values
+# - Set strong POSTGRES_PASSWORD
+# - Set real AWS credentials for S3
+# - Set SMTP credentials for email
+```
+
+### 2. Deploy with Production Overrides
+
+```bash
+docker-compose -f docker-compose.yml -f infra/docker-compose.prod.yml up -d --build
+```
+
+### 3. Run Database Migrations
+
+```bash
+docker-compose exec backend alembic upgrade head
+```
+
+### 4. Scale Workers
+
+```bash
+docker-compose -f docker-compose.yml -f infra/docker-compose.prod.yml up -d --scale worker=4
+```
+
+---
+
+## CI/CD Pipeline
+
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs:
+
+1. **Backend Tests**: Lint + pytest with PostgreSQL/Redis services
+2. **Frontend Build**: npm lint + build
+3. **Docker Build**: Build images for all services
+4. **Deploy**: Push to GitHub Container Registry (on main branch)
 
 ---
 
 ## Security
 
-- **`config.py`** — never committed. Contains all passwords and API tokens.
-- **`apify_accounts.json`** — never committed. Contains Apify account tokens.
-- **`email_sent_log.json`** — never committed. Contains recruiter emails.
-- **Resume `.docx` files** — never committed. Share separately.
-- **`.gitignore`** enforces all of the above automatically.
+- **JWT Authentication**: All API endpoints (except auth) require valid JWT tokens
+- **Password Hashing**: bcrypt via passlib
+- **Role-Based Access**: Admin/User roles with middleware enforcement
+- **Environment Variables**: All secrets via `.env` (git-ignored)
+- **CORS**: Configurable allowed origins
 
 ---
 
-## Candidate Profile
+## Legacy Pipeline Scripts
 
-- **Name:** Harsh Madan
-- **Title:** SAP S/4HANA Program Manager | Data Migration Specialist
-- **Experience:** 15+ years (ECC → S/4HANA)
-- **Modules:** FICO, MM, SD, MDG, LSMW, LTMC, SLT, SAP CPI
-- **Current:** Autodesk (May 2015–Present)
-- **CTC:** 35 LPA → Expected 40 LPA | Notice: Immediate
-- **Open to:** Remote / Hybrid
+The root directory contains legacy automation scripts from the original SAP Job Application Pipeline. These scripts remain functional independently:
+
+- `apify_scrape.py` — LinkedIn recruiter post scraping
+- `linkedin_easy_apply.py` — LinkedIn auto-apply
+- `naukri_auto_apply.py` — Naukri auto-apply
+- `send_sap_emails.py` — Email outreach
+- `resume_builder.py` — ATS resume builder
+
+See `config.example.py` for legacy script configuration.
 
 ---
 
-## Stats
-- Total emails sent to date: **89+**
-- Daily run: 9:00 AM IST (automated)
-- Platforms: LinkedIn, Naukri, Indeed (via JobSpy)
+## License
+
+Private — All rights reserved.

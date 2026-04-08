@@ -6,6 +6,7 @@
 config.py
 apify_accounts.json
 git_push.bat
+.env
 
 # ── RUNTIME DATA (generated, not source code) ─────────────────────────────────
 linkedin_posts_today.json
@@ -45,6 +46,15 @@ venv/
 env/
 .venv/
 .env/
+
+# ── NODE.JS ──────────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+
+# ── DOCKER ───────────────────────────────────────────────────────────────────
+*.env.local
+*.env.production
 
 # ── TEMP / OS FILES ───────────────────────────────────────────────────────────
 Thumbs.db
