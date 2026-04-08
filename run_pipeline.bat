@@ -1,10 +1,22 @@
 @echo off
+setlocal
+cd /d "%~dp0"
 REM ============================================================
 REM  SAP Job Application Full Pipeline — Harsh Madan
 REM  Runs all steps sequentially every day at 9 AM IST
 REM ============================================================
-cd /d "C:\Users\madan\OneDrive\Desktop\Linkdin Job Application"
-set PYTHON="C:\Users\madan\AppData\Local\Python\bin\python.exe"
+set "PYTHON_CMD="
+where python >nul 2>&1 && set "PYTHON_CMD=python"
+if not defined PYTHON_CMD (
+  where py >nul 2>&1 && set "PYTHON_CMD=py -3"
+)
+
+if not defined PYTHON_CMD (
+  echo [ERROR] Python was not found in PATH.
+  echo Install Python 3.10+ and re-run this file.
+  pause
+  exit /b 1
+)
 
 echo.
 echo ============================================================
@@ -13,47 +25,47 @@ echo ============================================================
 
 echo.
 echo [STEP 1] Apify LinkedIn Scrape...
-%PYTHON% -u apify_scrape.py
+%PYTHON_CMD% -u apify_scrape.py
 echo   Done.
 
 echo.
 echo [STEP 2] Send Tailored Emails to Recruiters...
-%PYTHON% -u send_sap_emails.py --all
+%PYTHON_CMD% -u send_sap_emails.py --all
 echo   Done.
 
 echo.
 echo [STEP 3] LinkedIn Easy Apply...
-%PYTHON% -u linkedin_easy_apply.py
+%PYTHON_CMD% -u linkedin_easy_apply.py
 echo   Done.
 
 echo.
 echo [STEP 4] Naukri Auto-Apply...
-%PYTHON% -u naukri_auto_apply.py
+%PYTHON_CMD% -u naukri_auto_apply.py
 echo   Done.
 
 echo.
 echo [STEP 5] Job Board Scrape (IIMJobs, Hirist, Instahyre, Indeed)...
-%PYTHON% -u jobboard_apply.py
+%PYTHON_CMD% -u jobboard_apply.py
 echo   Done.
 
 echo.
 echo [STEP 6] Headhunter Firm Outreach...
-%PYTHON% -u headhunter_outreach.py --all
+%PYTHON_CMD% -u headhunter_outreach.py --all
 echo   Done.
 
 echo.
 echo [STEP 7] Direct Company/CIO Outreach...
-%PYTHON% -u company_outreach.py --all
+%PYTHON_CMD% -u company_outreach.py --all
 echo   Done.
 
 echo.
 echo [STEP 8] Telegram SAP Group Monitor...
-%PYTHON% -u telegram_monitor.py
+%PYTHON_CMD% -u telegram_monitor.py
 echo   Done.
 
 echo.
 echo [STEP 9] LinkedIn Auto-Post (Mondays only)...
-%PYTHON% -u linkedin_autoposter.py
+%PYTHON_CMD% -u linkedin_autoposter.py
 echo   Done.
 
 echo.

@@ -42,22 +42,28 @@ Step 4 → Naukri Auto-Apply (Selenium) — Remote + Delhi NCR, last 3 days
 
 ---
 
-## Setup (New Machine / New Agent)
+## Setup (Windows-safe, New Machine / New Agent)
 
 ### 1. Prerequisites
 - Python 3.10+ → [python.org](https://python.org)
 - Google Chrome → [chrome.google.com](https://chrome.google.com)
 - Git → [git-scm.com](https://git-scm.com)
 
-### 2. Install dependencies
-```bash
-pip install python-jobspy selenium webdriver-manager python-docx requests
+### 2. Clone and open the correct folder (PowerShell)
+```powershell
+git clone https://github.com/madanharsh1984-lgtm/sap-job-application-pipeline.git
+cd .\sap-job-application-pipeline
+```
+
+### 3. Install dependencies
+```powershell
+python -m pip install python-jobspy selenium webdriver-manager python-docx requests
 ```
 Or double-click **`Install_JobSpy.bat`**.
 
-### 3. Configure secrets
-```bash
-copy config.example.py config.py
+### 4. Configure secrets
+```powershell
+Copy-Item .\config.example.py .\config.py
 ```
 Open `config.py` and fill in all values marked `← FILL THIS`:
 - Gmail App Password (not your regular password — create at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords))
@@ -67,8 +73,8 @@ Open `config.py` and fill in all values marked `← FILL THIS`:
 - Your `BASE_DIR` (full path to this project folder)
 - ChromeDriver path (auto-managed by `webdriver-manager`, or set manually)
 
-### 4. Run manually
-```bash
+### 5. Run manually
+```powershell
 python apify_scrape.py       # Scrape LinkedIn posts → linkedin_posts_today.json
 python send_sap_emails.py    # Send emails to extracted leads
 python linkedin_easy_apply.py
@@ -76,9 +82,19 @@ python naukri_auto_apply.py
 ```
 Or double-click **`Run_Full_Pipeline.bat`**.
 
-### 5. Schedule daily automation (Windows Task Scheduler)
+### 6. Schedule daily automation (Windows Task Scheduler)
 The pipeline is pre-configured to run at **9:00 AM IST** via Windows Task Scheduler.
 Check Task Scheduler → `SAP_LinkedIn_EasyApply` and `SAP_Naukri_AutoApply`.
+
+### Troubleshooting (common setup mistakes)
+- `no configuration file provided: not found` after `docker-compose up --build`  
+  This repository does **not** use Docker Compose. Use the Python setup above.
+- `Copy-Item .env.example .env` fails  
+  This project uses `config.example.py` → `config.py`, not `.env.example`.
+- `set SECRET_KEY=...` in PowerShell  
+  Not required for this desktop pipeline. (And in PowerShell, env vars use `$env:NAME=...`.)
+- `Cannot find path ...`  
+  Run commands only after `cd .\sap-job-application-pipeline` (the folder containing `README.md`).
 
 ---
 
