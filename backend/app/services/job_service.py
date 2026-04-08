@@ -150,7 +150,10 @@ def _wait_for_apify_capacity(actor_id: str) -> None:
 
 def scrape_jobs_from_apify(normalized_keywords: list[str]) -> list[dict]:
     if not settings.APIFY_TOKEN:
-        raise RuntimeError('APIFY_TOKEN is not configured')
+        raise RuntimeError(
+            'APIFY_TOKEN environment variable is not set. '
+            'Configure it in your .env file or runtime environment.'
+        )
     if not settings.APIFY_ACTOR_ID:
         raise RuntimeError('APIFY_ACTOR_ID is not configured')
 
@@ -194,14 +197,17 @@ def scrape_jobs_from_apify(normalized_keywords: list[str]) -> list[dict]:
             raise RuntimeError(
                 'Apify actor run failed: '
                 f'actor_id={actor_id} run_id={run_id} status={status_value} '
-                f'keyword_count={len(normalized_keywords)}'
+                f'keyword_count={len(normalized_keywords)}. '
+                f'Check Apify run logs: https://console.apify.com/actors/runs/{run_id}'
             )
 
     if not dataset_id:
         raise RuntimeError(
             'Apify actor polling timed out before completion: '
             f'actor_id={actor_id} run_id={run_id} last_status={last_status} '
-            f'keyword_count={len(normalized_keywords)}'
+            f'keyword_count={len(normalized_keywords)}. '
+            'Consider increasing APIFY_RUN_STATUS_MAX_POLLS or '
+            'APIFY_RUN_STATUS_POLL_SECONDS.'
         )
 
     dataset_status, dataset_response = _apify_request(
