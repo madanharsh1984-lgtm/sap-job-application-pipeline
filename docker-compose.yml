@@ -1,3 +1,8 @@
+x-apify-host-override: &apify_host_override
+  extra_hosts:
+    # Temporary egress workaround for environments with broken container DNS resolution.
+    - "api.apify.com:34.241.71.15"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -23,6 +28,7 @@ services:
       - app_network
 
   backend:
+    <<: *apify_host_override
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -53,12 +59,11 @@ services:
     dns:
       - 8.8.8.8
       - 1.1.1.1
-    extra_hosts:
-      - "api.apify.com:34.241.71.15"
     volumes:
       - ./:/workspace
 
   worker:
+    <<: *apify_host_override
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -88,8 +93,6 @@ services:
     dns:
       - 8.8.8.8
       - 1.1.1.1
-    extra_hosts:
-      - "api.apify.com:34.241.71.15"
 
   frontend:
     build:
