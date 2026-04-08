@@ -42,6 +42,9 @@ services:
       APIFY_RUN_STATUS_POLL_SECONDS: ${APIFY_RUN_STATUS_POLL_SECONDS:-2}
     ports:
       - '8000:8000'
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     volumes:
       - ./:/workspace
 
@@ -68,6 +71,9 @@ services:
       APIFY_RUN_STATUS_MAX_POLLS: ${APIFY_RUN_STATUS_MAX_POLLS:-30}
       APIFY_RUN_STATUS_POLL_SECONDS: ${APIFY_RUN_STATUS_POLL_SECONDS:-2}
     command: celery -A app.celery_app.celery_app worker -Q celery,automation --loglevel=info
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
   frontend:
     build:
