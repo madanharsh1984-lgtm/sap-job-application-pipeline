@@ -59,6 +59,10 @@ cd .\sap-job-application-pipeline
 ```powershell
 python -m pip install python-jobspy selenium webdriver-manager python-docx requests
 ```
+If `python` is not found on your machine, use:
+```powershell
+py -3 -m pip install python-jobspy selenium webdriver-manager python-docx requests
+```
 Or double-click **`Install_JobSpy.bat`**.
 
 ### 4. Configure secrets
