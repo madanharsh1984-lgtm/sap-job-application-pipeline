@@ -396,7 +396,7 @@ def create_payment_order(email: str, amount_inr: int | None = None) -> dict:
     key_id = os.getenv('RAZORPAY_KEY_ID', '').strip()
     key_secret = os.getenv('RAZORPAY_KEY_SECRET', '').strip()
     if not key_id or not key_secret:
-        raise ValueError('Razorpay credentials are not configured')
+        raise ValueError('Razorpay credentials are not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.')
 
     amount = int(amount_inr or os.getenv('BASIC_PLAN_PRICE_INR', DEFAULT_PLAN_PRICE_INR))
     if amount <= 0:
@@ -442,7 +442,7 @@ def verify_payment_and_activate(
 ) -> dict:
     key_secret = os.getenv('RAZORPAY_KEY_SECRET', '').strip()
     if not key_secret:
-        raise ValueError('Razorpay credentials are not configured')
+        raise ValueError('Razorpay verification failed: RAZORPAY_KEY_SECRET is not configured.')
 
     payload = f'{razorpay_order_id}|{razorpay_payment_id}'
     expected_signature = hmac.new(
