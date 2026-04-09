@@ -16,6 +16,7 @@ import json
 import os
 import re
 import time
+from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -23,7 +24,13 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from playwright.sync_api import BrowserContext, Error as PlaywrightError, Page, sync_playwright
+try:
+    from playwright.sync_api import BrowserContext, Error as PlaywrightError, Page, sync_playwright
+except Exception:  # noqa: BLE001
+    BrowserContext = Any  # type: ignore
+    Page = Any  # type: ignore
+    PlaywrightError = Exception  # type: ignore
+    sync_playwright = None  # type: ignore
 
 try:
     from playwright_stealth import stealth_sync
@@ -300,7 +307,9 @@ class PlaywrightApplyEngine:
 
         def handle_request(req):
             url = req.url or ''
-            if 'linkedin.com' in url and ('jobs-apply' in url or '/easyApply' in url):
+            host = (urlparse(url).hostname or '').lower()
+            is_linkedin = host == 'linkedin.com' or host.endswith('.linkedin.com')
+            if is_linkedin and ('jobs-apply' in url or '/easyApply' in url):
                 captured.append({'url': url, 'method': req.method, 'headers': req.headers})
 
         page.on('request', handle_request)
@@ -368,6 +377,10 @@ class PlaywrightApplyEngine:
 
     def process_target(self, target: ApplyTarget) -> ApplyResult:
         result = ApplyResult(platform=target.platform, title=target.title, location=target.location, status='FAILED')
+        if sync_playwright is None:
+            result.reason = 'Playwright is not installed. Run: python -m pip install playwright playwright-stealth && python -m playwright install chromium'
+            result.finished_at = datetime.utcnow().isoformat()
+            return result
         credentials = {
             'linkedin': self.config.linkedin_email,
             'naukri': self.config.naukri_email,

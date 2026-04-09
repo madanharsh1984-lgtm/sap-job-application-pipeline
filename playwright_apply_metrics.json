@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-04-09T04:48:44.477228",
+  "total_targets": 1,
+  "successful_targets": 0,
+  "total_applied": 0,
+  "captcha_triggers": 0,
+  "results": [
+    {
+      "platform": "linkedin",
+      "title": "SAP Project Manager",
+      "location": "Remote",
+      "status": "FAILED",
+      "reason": "Playwright is not installed. Run: python -m pip install playwright playwright-stealth && python -m playwright install chromium",
+      "applied_count": 0,
+      "captcha_triggered": false,
+      "started_at": "2026-04-09T04:48:44.477083",
+      "finished_at": "2026-04-09T04:48:44.477099"
+    }
+  ]
+}
