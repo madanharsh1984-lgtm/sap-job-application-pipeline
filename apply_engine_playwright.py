@@ -308,7 +308,7 @@ class PlaywrightApplyEngine:
         def handle_request(req):
             url = req.url or ''
             host = (urlparse(url).hostname or '').lower()
-            is_linkedin = host == 'linkedin.com' or host.endswith('.linkedin.com')
+            is_linkedin = host in {'linkedin.com', 'www.linkedin.com'}
             if is_linkedin and ('jobs-apply' in url or '/easyApply' in url):
                 captured.append({'url': url, 'method': req.method, 'headers': req.headers})
 

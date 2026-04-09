@@ -22,6 +22,7 @@ daily_pipeline_summary.json
 *.log
 /*.txt
 naukri_run_log.txt
+playwright_apply_metrics.json
 
 # ── SCREENSHOTS / DEBUG IMAGES ────────────────────────────────────────────────
 *.png
