@@ -35,7 +35,8 @@ def get_jobs(
     email: str = Query(...),
 ):
     try:
-        return get_user_jobs(email)
+        jobs, _meta = get_user_jobs(email)
+        return jobs
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

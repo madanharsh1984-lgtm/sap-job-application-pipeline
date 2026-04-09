@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import admin, auth, user
+from app.api.routes import admin, auth, payment, user
 from app.core.settings import settings
 from app.core.database import Base, engine, wait_for_database
 from app.models import job, keyword_set, resume, user as user_model, user_keyword_map  # noqa: F401
@@ -33,4 +33,5 @@ def health():
 
 app.include_router(auth.router)
 app.include_router(user.router)
+app.include_router(payment.router)
 app.include_router(admin.router)

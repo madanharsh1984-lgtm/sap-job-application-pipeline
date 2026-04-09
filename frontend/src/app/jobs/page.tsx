@@ -13,8 +13,17 @@ type JobItem = {
   source?: string;
 };
 
+type DashboardData = {
+  subscription_status: 'FREE' | 'PAID';
+  jobs_unlocked: number;
+  total_jobs: number;
+  upgrade_required: boolean;
+  upgrade_message: string;
+};
+
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [summary, setSummary] = useState<DashboardData | null>(null);
   const [message, setMessage] = useState('Loading...');
 
   useEffect(() => {
@@ -24,14 +33,18 @@ export default function JobsPage() {
       setMessage('Please login first');
       return;
     }
-    api
-      .get('/api/jobs', { params: { email } })
-      .then((res) => {
-        setJobs(Array.isArray(res.data) ? res.data : []);
+    Promise.all([
+      api.get('/api/jobs', { params: { email } }),
+      api.get('/api/dashboard', { params: { email } }),
+    ])
+      .then(([jobsResponse, dashboardResponse]) => {
+        setJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : []);
+        setSummary(dashboardResponse.data);
         setMessage('Loaded');
       })
       .catch(() => {
         setJobs([]);
+        setSummary(null);
         setMessage('Unable to fetch jobs');
       });
   }, []);
@@ -39,6 +52,9 @@ export default function JobsPage() {
   return (
     <main>
       <h1>Jobs</h1>
+      <p>Status: {summary?.subscription_status ?? 'N/A'}</p>
+      <p>Visible jobs: {summary?.jobs_unlocked ?? jobs.length} / {summary?.total_jobs ?? jobs.length}</p>
+      {summary?.upgrade_required ? <p>{summary.upgrade_message}</p> : null}
       <p>{message}</p>
       <ul>
         {jobs.map((job) => (

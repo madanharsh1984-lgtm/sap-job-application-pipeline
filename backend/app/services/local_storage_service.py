@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import hmac
 import json
 import logging
 import os
 import re
 import time
+import urllib.parse
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -17,6 +20,9 @@ logger = logging.getLogger(__name__)
 DEFAULT_LOCAL_DATA_DIR = r"C:\Users\madan\OneDrive\Desktop\Linkdin Job\data"
 MAX_KEYWORDS = 30
 DEFAULT_APIFY_ACTOR_ID = 'harvestapi~linkedin-post-search'
+FREE_JOB_LIMIT = 5
+DEFAULT_PLAN = 'basic'
+DEFAULT_PLAN_PRICE_INR = 499
 
 
 @dataclass
@@ -112,6 +118,20 @@ def _save_resume(paths: LocalDataPaths, email: str, resume_content: str) -> str:
 def _load_job_payload(file: Path) -> dict:
     payload = json.loads(file.read_text(encoding='utf-8'))
     return payload if isinstance(payload, dict) else {}
+
+
+def _enrich_user(user: dict) -> dict:
+    enriched = dict(user)
+    enriched.setdefault('subscription_status', 'FREE')
+    enriched.setdefault('payment_id', '')
+    enriched.setdefault('plan', DEFAULT_PLAN)
+    enriched.setdefault('plan_amount', DEFAULT_PLAN_PRICE_INR)
+    return enriched
+
+
+def _find_user(users: list[dict], email: str) -> dict | None:
+    user = next((item for item in users if isinstance(item, dict) and item.get('email') == email), None)
+    return _enrich_user(user) if user else None
 
 
 def _local_fallback_jobs(keywords: list[str]) -> list[dict]:
@@ -265,7 +285,8 @@ def onboard_user(email: str, resume_content: str) -> dict:
         _log(paths, 'info', f'Scraping end | email={email} | keyword_set={ks_id} | jobs={len(jobs)}')
 
     users = _load_users(paths)
-    by_email = {str(user.get('email')): user for user in users if isinstance(user, dict) and user.get('email')}
+    existing_user = _find_user(users, email)
+    by_email = {str(user.get('email')): _enrich_user(user) for user in users if isinstance(user, dict) and user.get('email')}
     by_email[email] = {
         'email': email,
         'keywords': keywords,
@@ -273,16 +294,29 @@ def onboard_user(email: str, resume_content: str) -> dict:
         'resume_path': resume_path,
         'job_file': str(job_file),
         'job_count': len(jobs),
+        'subscription_status': existing_user.get('subscription_status', 'FREE') if existing_user else 'FREE',
+        'payment_id': existing_user.get('payment_id', '') if existing_user else '',
+        'plan': existing_user.get('plan', DEFAULT_PLAN) if existing_user else DEFAULT_PLAN,
+        'plan_amount': existing_user.get('plan_amount', DEFAULT_PLAN_PRICE_INR) if existing_user else DEFAULT_PLAN_PRICE_INR,
         'updated_at': datetime.now(timezone.utc).isoformat(),
     }
     _save_users(paths, sorted(by_email.values(), key=lambda item: item['email']))
-    return {'keywords': keywords, 'keyword_set_id': ks_id, 'scrape_queued': scrape_queued}
+    is_paid = by_email[email]['subscription_status'] == 'PAID'
+    jobs_unlocked = len(jobs) if is_paid else min(len(jobs), FREE_JOB_LIMIT)
+    return {
+        'keywords': keywords,
+        'keyword_set_id': ks_id,
+        'scrape_queued': scrape_queued,
+        'subscription_status': by_email[email]['subscription_status'],
+        'jobs_unlocked': jobs_unlocked,
+        'upgrade_message': '' if is_paid else f'Upgrade to unlock all jobs. Free plan shows first {FREE_JOB_LIMIT} jobs.',
+    }
 
 
-def get_user_jobs(email: str) -> list[dict]:
+def get_user_jobs(email: str) -> tuple[list[dict], dict]:
     paths = get_local_data_paths()
     users = _load_users(paths)
-    user = next((item for item in users if isinstance(item, dict) and item.get('email') == email), None)
+    user = _find_user(users, email)
     if user is None:
         raise FileNotFoundError('User not found')
 
@@ -297,23 +331,39 @@ def get_user_jobs(email: str) -> list[dict]:
     payload = _load_job_payload(job_file)
     jobs = payload.get('jobs', [])
     if not isinstance(jobs, list):
-        return []
-    return jobs
+        jobs = []
+    is_paid = str(user.get('subscription_status', 'FREE')).upper() == 'PAID'
+    visible_jobs = jobs if is_paid else jobs[:FREE_JOB_LIMIT]
+    meta = {
+        'subscription_status': 'PAID' if is_paid else 'FREE',
+        'plan': user.get('plan', DEFAULT_PLAN),
+        'total_jobs': len(jobs),
+        'jobs_unlocked': len(visible_jobs),
+        'upgrade_required': not is_paid and len(jobs) > FREE_JOB_LIMIT,
+        'upgrade_message': '' if is_paid else f'Upgrade to unlock all jobs. Free plan shows first {FREE_JOB_LIMIT} jobs.',
+    }
+    return visible_jobs, meta
 
 
 def get_dashboard(email: str) -> dict:
     paths = get_local_data_paths()
     users = _load_users(paths)
-    user = next((item for item in users if isinstance(item, dict) and item.get('email') == email), None)
+    user = _find_user(users, email)
     if user is None:
         raise FileNotFoundError('User not found')
 
-    jobs = get_user_jobs(email)
+    jobs, meta = get_user_jobs(email)
     return {
         'email': email,
         'keyword_set_id': user.get('keyword_set_id'),
         'keywords': user.get('keywords', []),
-        'job_count': len(jobs),
+        'job_count': meta['jobs_unlocked'],
+        'total_jobs': meta['total_jobs'],
+        'jobs_unlocked': meta['jobs_unlocked'],
+        'subscription_status': meta['subscription_status'],
+        'plan': meta['plan'],
+        'upgrade_required': meta['upgrade_required'],
+        'upgrade_message': meta['upgrade_message'],
         'jobs_preview': jobs[:5],
     }
 
@@ -331,8 +381,96 @@ def get_admin_stats() -> dict:
                 total_jobs += len(jobs)
         except (OSError, json.JSONDecodeError):
             continue
+    paid_users = [user for user in users if _enrich_user(user).get('subscription_status') == 'PAID']
+    revenue = sum(int(_enrich_user(user).get('plan_amount', DEFAULT_PLAN_PRICE_INR)) for user in paid_users)
     return {
         'total_users': len(users),
         'total_keyword_sets': len(keyword_sets),
         'total_jobs': total_jobs,
+        'total_paid_users': len(paid_users),
+        'revenue': revenue,
+    }
+
+
+def create_payment_order(email: str, amount_inr: int | None = None) -> dict:
+    key_id = os.getenv('RAZORPAY_KEY_ID', '').strip()
+    key_secret = os.getenv('RAZORPAY_KEY_SECRET', '').strip()
+    if not key_id or not key_secret:
+        raise ValueError('Razorpay credentials are not configured')
+
+    amount = int(amount_inr or os.getenv('BASIC_PLAN_PRICE_INR', DEFAULT_PLAN_PRICE_INR))
+    if amount <= 0:
+        raise ValueError('Amount must be positive')
+
+    notes = {'email': email, 'plan': DEFAULT_PLAN}
+    payload = urllib.parse.urlencode(
+        {
+            'amount': str(amount * 100),
+            'currency': 'INR',
+            'receipt': f'{_safe_email(email)}-{int(time.time())}',
+            'notes[email]': notes['email'],
+            'notes[plan]': notes['plan'],
+        }
+    ).encode('utf-8')
+    req = urllib.request.Request('https://api.razorpay.com/v1/orders', data=payload, method='POST')
+    req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+    auth = f'{key_id}:{key_secret}'.encode('utf-8')
+    req.add_header('Authorization', 'Basic ' + base64.b64encode(auth).decode('utf-8'))
+    try:
+        with urllib.request.urlopen(req, timeout=60) as response:
+            body = json.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode('utf-8', errors='ignore')
+        raise ValueError(f'Razorpay order creation failed: {detail[:300]}') from exc
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f'Razorpay order creation failed: {exc}') from exc
+
+    return {
+        'order_id': body.get('id'),
+        'amount': amount,
+        'currency': body.get('currency', 'INR'),
+        'key_id': key_id,
+        'plan': DEFAULT_PLAN,
+    }
+
+
+def verify_payment_and_activate(
+    email: str,
+    razorpay_order_id: str,
+    razorpay_payment_id: str,
+    razorpay_signature: str,
+) -> dict:
+    key_secret = os.getenv('RAZORPAY_KEY_SECRET', '').strip()
+    if not key_secret:
+        raise ValueError('Razorpay credentials are not configured')
+
+    payload = f'{razorpay_order_id}|{razorpay_payment_id}'
+    expected_signature = hmac.new(
+        key_secret.encode('utf-8'),
+        payload.encode('utf-8'),
+        hashlib.sha256,
+    ).hexdigest()
+    if not hmac.compare_digest(expected_signature, razorpay_signature):
+        raise ValueError('Invalid payment signature')
+
+    paths = get_local_data_paths()
+    users = _load_users(paths)
+    by_email = {str(user.get('email')): _enrich_user(user) for user in users if isinstance(user, dict) and user.get('email')}
+    existing = by_email.get(email)
+    if not existing:
+        raise FileNotFoundError('User not found')
+
+    updated = dict(existing)
+    updated['subscription_status'] = 'PAID'
+    updated['payment_id'] = razorpay_payment_id
+    updated['plan'] = DEFAULT_PLAN
+    updated['plan_amount'] = int(os.getenv('BASIC_PLAN_PRICE_INR', DEFAULT_PLAN_PRICE_INR))
+    updated['updated_at'] = datetime.now(timezone.utc).isoformat()
+    by_email[email] = updated
+    _save_users(paths, sorted(by_email.values(), key=lambda item: item['email']))
+    return {
+        'email': email,
+        'subscription_status': 'PAID',
+        'payment_id': razorpay_payment_id,
+        'plan': updated['plan'],
     }

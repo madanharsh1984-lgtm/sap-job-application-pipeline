@@ -32,8 +32,12 @@ Then open:
 - `POST /api/auth/login`
 - `POST /api/user/onboard`
 - `GET /api/jobs`
+- `GET /api/dashboard`
+- `POST /api/payment/create-order`
+- `POST /api/payment/verify`
 - `GET /admin/users` (ADMIN only)
 - `GET /admin/metrics` (ADMIN only)
+- `GET /admin/stats`
 
 ---
 
