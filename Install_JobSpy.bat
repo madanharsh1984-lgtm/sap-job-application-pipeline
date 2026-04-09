@@ -16,10 +16,19 @@ if not defined PYTHON_CMD (
 )
 
 echo Installing required Python packages...
-%PYTHON_CMD% -m pip install python-jobspy selenium webdriver-manager python-docx requests
+%PYTHON_CMD% -m pip install python-jobspy playwright playwright-stealth python-docx requests
 if errorlevel 1 (
   echo.
   echo [ERROR] Package installation failed.
+  pause
+  exit /b 1
+)
+
+echo Installing Playwright Chromium browser...
+%PYTHON_CMD% -m playwright install chromium
+if errorlevel 1 (
+  echo.
+  echo [ERROR] Playwright browser install failed.
   pause
   exit /b 1
 )

@@ -16,7 +16,6 @@ if not defined PYTHON_CMD (
 )
 
 taskkill /f /im chrome.exe /t 2>nul
-taskkill /f /im chromedriver.exe /t 2>nul
 ping -n 5 127.0.0.1 >nul
 
 %PYTHON_CMD% -u "%SCRIPT%" >> "%LOG%" 2>&1

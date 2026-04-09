@@ -40,7 +40,7 @@ SMTP_PORT   = 465
 SMTP_USER   = "your.email@gmail.com"     # ← FILL THIS
 SMTP_PASS   = "xxxx xxxx xxxx xxxx"      # ← FILL THIS (Gmail App Password, 16 chars)
 
-# ── GOOGLE ACCOUNT (for OAuth login flows in Selenium) ────────────────────────
+# ── GOOGLE ACCOUNT (optional OAuth fallback) ───────────────────────────────────
 GOOGLE_EMAIL = "your.email@gmail.com"    # ← FILL THIS
 GOOGLE_PASS  = "YourGooglePassword"      # ← FILL THIS
 
@@ -62,13 +62,19 @@ BRIGHTDATA_API_KEY = ""    # ← FILL THIS (e.g. "ed991925-xxxx-xxxx-xxxx-xxxxxx
 # Leave blank to use apify_accounts.json token rotation instead
 APIFY_TOKEN = ""    # ← FILL THIS (e.g. "apify_api_xxxxxxxx...")
 
-# ── CHROME / SELENIUM ─────────────────────────────────────────────────────────
-CHROME_BIN        = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-CHROMEDRIVER_PATH = r"C:\Users\YOUR_USERNAME\.wdm\drivers\chromedriver\win64\VERSION\chromedriver-win32\chromedriver.exe"  # ← FILL THIS
+# ── PLAYWRIGHT APPLY ENGINE ────────────────────────────────────────────────────
+# Keep empty to use defaults from apply_engine_playwright.py
+PLAYWRIGHT_HEADLESS = True
+PLAYWRIGHT_WORKERS = 5
+PLAYWRIGHT_MAX_RETRIES = 2
+PLAYWRIGHT_USE_API_APPLY = True
+PLAYWRIGHT_SESSION_DIR = os.path.join(BASE_DIR, ".playwright_sessions")
+PLAYWRIGHT_REDIS_URL = ""               # optional (e.g. redis://localhost:6379/0)
+PLAYWRIGHT_PROXY_LIST = ""              # optional comma-separated proxies
 
-CHROME_PROFILE_LI     = r"C:\Users\YOUR_USERNAME\AppData\Local\Temp\selenium_li_fresh"     # ← FILL THIS
-CHROME_PROFILE_NAUKRI = r"C:\Users\YOUR_USERNAME\AppData\Local\Temp\selenium_naukri_fresh"  # ← FILL THIS
-CHROME_PROFILE_APIFY  = r"C:\Users\YOUR_USERNAME\AppData\Local\Temp\selenium_apify_fresh"   # ← FILL THIS
+# Optional captcha solver integration
+CAPTCHA_PROVIDER = ""                   # "2captcha" or "capmonster"
+CAPTCHA_API_KEY = ""                    # provider API key
 
 # ── JOB SEARCH CONFIG ─────────────────────────────────────────────────────────
 JOB_TITLES = [

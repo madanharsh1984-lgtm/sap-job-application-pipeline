@@ -69,8 +69,8 @@ Generated outputs:
 ```
 Step 1 → Scrape LinkedIn recruiter posts (Apify) + job listings (JobSpy)
 Step 2 → Extract emails from posts → send tailored Gmail applications
-Step 3 → LinkedIn Easy Apply (Selenium) — 4 SAP titles, Remote, last 24h
-Step 4 → Naukri Auto-Apply (Selenium) — Remote + Delhi NCR, last 3 days
+Step 3 → LinkedIn Easy Apply (Playwright + stealth) — 4 SAP titles, Remote, last 24h
+Step 4 → Naukri Auto-Apply (Playwright + stealth) — Remote + Delhi NCR, last 3 days
 ```
 
 ---
@@ -87,8 +87,9 @@ Step 4 → Naukri Auto-Apply (Selenium) — Remote + Delhi NCR, last 3 days
 │
 ├── send_sap_emails.py     ← Step 2: Send Gmail applications to email leads
 │
-├── linkedin_easy_apply.py ← Step 3: Selenium Easy Apply on LinkedIn
-├── naukri_auto_apply.py   ← Step 4: Selenium auto-apply on Naukri
+├── apply_engine_playwright.py ← Shared Playwright apply engine (stealth + retries + captcha hook)
+├── linkedin_easy_apply.py ← Step 3: Playwright Easy Apply on LinkedIn
+├── naukri_auto_apply.py   ← Step 4: Playwright auto-apply on Naukri
 │
 ├── Create_SAP_Job_Drafts.py    ← Utility: create Outlook drafts with resume
 ├── Run_Full_Pipeline.bat       ← Run all steps manually (double-click)
@@ -117,11 +118,13 @@ cd .\sap-job-application-pipeline
 
 ### 3. Install dependencies
 ```powershell
-python -m pip install python-jobspy selenium webdriver-manager python-docx requests
+python -m pip install python-jobspy playwright playwright-stealth python-docx requests
+python -m playwright install chromium
 ```
 If `python` is not found on your machine, use:
 ```powershell
-py -3 -m pip install python-jobspy selenium webdriver-manager python-docx requests
+py -3 -m pip install python-jobspy playwright playwright-stealth python-docx requests
+py -3 -m playwright install chromium
 ```
 Or double-click **`Install_JobSpy.bat`**.
 
@@ -135,14 +138,16 @@ Open `config.py` and fill in all values marked `← FILL THIS`:
 - Naukri login credentials
 - Apify API token (from [console.apify.com/settings/integrations](https://console.apify.com/settings/integrations))
 - Your `BASE_DIR` (full path to this project folder)
-- ChromeDriver path (auto-managed by `webdriver-manager`, or set manually)
+- Optional captcha env vars for automation hardening:
+  - `CAPTCHA_PROVIDER=2captcha` or `capmonster`
+  - `CAPTCHA_API_KEY=<your_key>`
 
 ### 5. Run manually
 ```powershell
 python apify_scrape.py       # Scrape LinkedIn posts → linkedin_posts_today.json
 python send_sap_emails.py    # Send emails to extracted leads
-python linkedin_easy_apply.py
-python naukri_auto_apply.py
+python linkedin_easy_apply.py  # Playwright engine
+python naukri_auto_apply.py    # Playwright engine
 ```
 Or double-click **`Run_Full_Pipeline.bat`**.
 
